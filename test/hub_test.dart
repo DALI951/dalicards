@@ -20,13 +20,17 @@ void expectNoRowOverflow(WidgetTester tester) {
   for (final element in find.byType(Row, skipOffstage: false).evaluate()) {
     final ro = element.renderObject;
     if (ro is! RenderFlex || ro.direction != Axis.horizontal) continue;
-    final children = ro.children;
-    if (children == null || children.isEmpty) continue;
+    // RenderFlex keeps its children behind ContainerRenderObjectMixin, so walk
+    // them with firstChild/childAfter rather than a list.
     var total = 0.0;
-    for (final child in children) {
+    var count = 0;
+    RenderBox? child = ro.firstChild;
+    while (child != null) {
       total += child.size.width;
+      count++;
+      child = ro.childAfter(child);
     }
-    if (total > ro.size.width + 0.5) {
+    if (count > 0 && total > ro.size.width + 0.5) {
       bad.add('Row needs ${total.toStringAsFixed(1)}px but has '
           '${ro.size.width.toStringAsFixed(1)}px -> $element');
     }
