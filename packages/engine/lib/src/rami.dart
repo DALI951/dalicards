@@ -655,6 +655,9 @@ class RamiState {
 
   /// Can [cardId] legally be discarded right now?
   bool canDiscard(int seat, int cardId) {
+    if (roundOver) return false;
+    // A turn starts with a draw; you cannot discard until you have taken one.
+    if (!drewThisTurn) return false;
     if (discardedThisTurn) return false;
     if (hands[seat].isEmpty) return false;
     final c = _byId(hands[seat], cardId);

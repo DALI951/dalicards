@@ -20,12 +20,15 @@ const stock = [
   'Tc', 'Jc', 'Qc', 'Kc', 'Ac', '2d', '3d', '4d', '5d', '6d', '7d', '8d',
 ];
 
-/// Ids of the cards named by [notes], looked up in [s]'s zones (hand, stock or
-/// discard) so the caller never has to know how fixture ids are numbered.
-List<int> idsIn(RamiState s, List<String> notes) => [
+/// Ids of the cards named by [notes] in [seat]'s hand.
+///
+/// The hand is searched first on purpose: a double deck means the same
+/// notation can sit in the stock and in a hand at the same time, and they are
+/// different physical cards.
+List<int> idsIn(RamiState s, int seat, List<String> notes) => [
       for (final n in notes)
-        s.allCards.firstWhere((c) => c.notation == n,
-            orElse: () => throw StateError('no $n in this round')).id,
+        s.handOf(seat).firstWhere((c) => c.notation == n,
+            orElse: () => throw StateError('seat$seat holds no $n')).id,
     ];
 
 Card one(String n) => Card.parse(n);
@@ -200,7 +203,7 @@ void main() {
         ],
         current: 0,
       );
-      expect(s.canMeld(0, idsIn(s, ['5c', '6c', '7c'])), isNull,
+      expect(s.canMeld(0, idsIn(s, 0, ['5c', '6c', '7c'])), isNull,
           reason: '18 < 51');
     });
 
@@ -214,7 +217,7 @@ void main() {
         ],
         current: 0,
       );
-      final shape = s.canMeld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      final shape = s.canMeld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       expect(shape, isNotNull);
       expect(s.meldValue(shape!), greaterThanOrEqualTo(51));
     });
@@ -229,7 +232,7 @@ void main() {
         current: 0,
       );
       s.opened[0] = true;
-      expect(s.canMeld(0, idsIn(s, ['5c', '6c', '7c'])), isNotNull);
+      expect(s.canMeld(0, idsIn(s, 0, ['5c', '6c', '7c'])), isNotNull);
     });
 
     test('the threshold is configurable: 61 refuses what 51 allowed', () {
@@ -242,8 +245,8 @@ void main() {
         current: 0,
         rules: RamiRules.tunisian61,
       );
-      expect(easy.canMeld(0, idsIn(easy, notes)), isNotNull);
-      expect(hard.canMeld(0, idsIn(hard, notes)), isNull, reason: '54 < 61');
+      expect(easy.canMeld(0, idsIn(easy, 0, notes)), isNotNull);
+      expect(hard.canMeld(0, idsIn(hard, 0, notes)), isNull, reason: '54 < 61');
     });
 
     test('Tallage 71 counts only franc melds', () {
@@ -255,7 +258,7 @@ void main() {
         current: 0,
         rules: RamiRules.tallage71,
       );
-      expect(s.canMeld(0, idsIn(s, wild)), isNull,
+      expect(s.canMeld(0, idsIn(s, 0, wild)), isNull,
           reason: 'the joker makes it non-franc, so it scores 0 toward 71');
 
       // The same seven cards without the joker are franc, but only worth 54.
@@ -266,7 +269,7 @@ void main() {
         current: 0,
         rules: RamiRules.tallage71,
       );
-      expect(s2.canMeld(0, idsIn(s2, franc)), isNull, reason: '54 < 71');
+      expect(s2.canMeld(0, idsIn(s2, 0, franc)), isNull, reason: '54 < 71');
     });
 
     test('the simple variant has no opening requirement at all', () {
@@ -279,7 +282,7 @@ void main() {
         current: 0,
         rules: RamiRules.simple,
       );
-      expect(s.canMeld(0, idsIn(s, ['5c', '6c', '7c'])), isNotNull);
+      expect(s.canMeld(0, idsIn(s, 0, ['5c', '6c', '7c'])), isNotNull);
     });
   });
 
@@ -301,7 +304,7 @@ void main() {
       );
       final drawn = s.draw(0)!;
       expect(drawn.id, isNot(-1));
-      s.meld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       s.discard(0, s.handOf(0).first.id);
       expect(s.current, 1);
       expect(s.discardPile.length, 1);
@@ -352,7 +355,7 @@ void main() {
         ],
         current: 0,
       );
-      expect(s.canMeld(0, idsIn(s, ['5c', '6c', '7c', '9d'])), isNull);
+      expect(s.canMeld(0, idsIn(s, 0, ['5c', '6c', '7c', '9d'])), isNull);
     });
   });
 
@@ -366,10 +369,10 @@ void main() {
         ],
         current: 0,
       );
-      s.meld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
+      s.meld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
       expect(s.melds.single.length, 6);
       s.draw(0);
-      s.addToMeld(0, s.melds.single.id, idsIn(s, ['Kc']));
+      s.addToMeld(0, s.melds.single.id, idsIn(s, 0, ['Kc']));
       expect(s.melds.single.length, 7);
       expect(s.melds.single.shape.franc, isTrue);
     });
@@ -383,12 +386,12 @@ void main() {
         ],
         current: 0,
       );
-      s.meld(0, idsIn(s, ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, idsIn(s, 0, ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       final meldId = s.melds.single.id;
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       expect(s.current, 1);
-      s.addToMeld(1, meldId, idsIn(s, ['7c']));
+      s.addToMeld(1, meldId, idsIn(s, 1, ['7c']));
       expect(s.melds.single.length, 7);
       expect(s.melds.single.owner, 0, reason: 'ownership never changes');
     });
@@ -403,11 +406,11 @@ void main() {
         current: 0,
         rules: const RamiRules(openMelds: false),
       );
-      s.meld(0, idsIn(s, ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, idsIn(s, 0, ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       final meldId = s.melds.single.id;
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
-      expect(() => s.addToMeld(1, meldId, idsIn(s, ['7c'])),
+      expect(() => s.addToMeld(1, meldId, idsIn(s, 1, ['7c'])),
           throwsA(isA<StateError>()));
     });
 
@@ -421,8 +424,8 @@ void main() {
         current: 0,
         rules: RamiRules.simple,
       );
-      s.meld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
-      expect(() => s.addToMeld(0, s.melds.single.id, idsIn(s, ['Kc'])),
+      s.meld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
+      expect(() => s.addToMeld(0, s.melds.single.id, idsIn(s, 0, ['Kc'])),
           throwsA(isA<StateError>()));
     });
   });
@@ -489,7 +492,7 @@ void main() {
         ],
         current: 0,
       );
-      final move = s.meld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      final move = s.meld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       expect(move.wentOut, isTrue, reason: 'laying your last cards ends it');
       expect(s.result!.bills[0].charge, 0);
       expect(s.result!.bills[1].looseValue, 21);
@@ -526,7 +529,7 @@ void main() {
         discarded: ['2h'],
         current: 0,
       );
-      s.meld(0, idsIn(s, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, idsIn(s, 0, ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
 
@@ -559,7 +562,7 @@ void main() {
         current: 0,
       );
       s.opened[0] = true;
-      s.meld(0, idsIn(s, ['Kd', 'Kh', 'Jk']));
+      s.meld(0, idsIn(s, 0, ['Kd', 'Kh', 'Jk']));
       expect(s.melds.single.shape.franc, isFalse);
       final back = RamiState.fromJson(s.toJson());
       expect(back.melds.single.shape.franc, isFalse);
