@@ -104,7 +104,8 @@ class DeckSpec {
   final int decks;
   final int jokers;
 
-  int get size => ranks.length * decks + jokers;
+  /// Total physical cards: ranks x 4 suits x [decks], plus the jokers.
+  int get size => ranks.length * Suit.values.length * decks + jokers;
 }
 
 /// How the face cards are valued. Tunisian tables disagree, so this is a
@@ -119,8 +120,9 @@ class FaceValues {
   /// The common Tunisian default chosen by Dali.
   static const FaceValues tunisian = FaceValues(jack: 8, queen: 9, king: 10);
 
-  /// The other widespread variant (J and Q swapped).
-  static const FaceValues swapped = FaceValues(jack: 10, queen: 9, king: 8);
+  /// The other widespread variant: the jack and the queen swap, the king
+  /// stays on 10.
+  static const FaceValues swapped = FaceValues(jack: 9, queen: 8, king: 10);
 
   final int jack;
   final int queen;

@@ -33,7 +33,7 @@ hosting. The server is authoritative and never sends another player's hand.
 Chkobba is not played the same at every table, so the rules are settings:
 
 - deck: French or Italian 40-card pack
-- face values: `J=8 Q=9 K=10` (default) or `J=10 Q=9 K=8`
+- face values: `J=8 Q=9 K=10` (default) or `J=9 Q=8 K=10`
 - capture priority: single card beats a sum (default) or best sum wins
 - Chkobba on the last card of the round: forbidden (default) or allowed
 - deal 3 (default) or 4 · target 11 / 21 / 31 · win by 2 or not

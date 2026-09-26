@@ -95,7 +95,7 @@ Base: 40-card deck, deal 3 each + 4 on table, play one, capture on single-value 
 **Variant flags** (because every table in Tunisia plays slightly differently — this is a real differentiator):
 
 - `deck`: french40 | italian40
-- `faceValues`: J=8,Q=9,K=10 (default) **or** J=10,Q=9,K=8
+- `faceValues`: J=8,Q=9,K=10 (default) **or** J=9,Q=8,K=10 (jack/queen swapped)
 - `capturePriority`: single-first (default) | best-sum
 - `chkobbaOnLastCard`: forbidden (default) | allowed
 - `dealSize`: 3 (default) | 4

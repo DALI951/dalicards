@@ -22,6 +22,17 @@ void main() {
     test('single pack is 52', () {
       expect(DeckSpec.singlePack.size, 52);
     });
+
+    test('size always matches what Deck.shuffled actually builds', () {
+      for (final spec in [
+        DeckSpec.chkobba,
+        DeckSpec.rami,
+        DeckSpec.singlePack,
+      ]) {
+        expect(Deck.shuffled(spec, 4).cards.length, spec.size,
+            reason: '${spec.name}: size getter must count 4 suits x decks');
+      }
+    });
   });
 
   group('Deck.shuffled', () {
@@ -79,11 +90,11 @@ void main() {
       expect(v.value(Rank.king), 10);
     });
 
-    test('swapped variant: J=10 Q=9 K=8', () {
+    test('swapped variant: J=9 Q=8 K=10', () {
       const v = FaceValues.swapped;
-      expect(v.value(Rank.jack), 10);
-      expect(v.value(Rank.queen), 9);
-      expect(v.value(Rank.king), 8);
+      expect(v.value(Rank.jack), 9);
+      expect(v.value(Rank.queen), 8);
+      expect(v.value(Rank.king), 10);
     });
 
     test('the two variants never agree on a rank', () {
