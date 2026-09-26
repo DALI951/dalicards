@@ -1,4 +1,4 @@
-/// Tunisian Rami (الرامي) rules engine.
+/// Tunisian Rami (Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â§Ã™â€¦Ã™Å ) rules engine.
 ///
 /// Pure Dart, no Flutter, deterministic for a given seed so the online event
 /// log can replay a match card for card.
@@ -34,10 +34,10 @@ import 'cards.dart';
 
 /// The two meld shapes, in the Tunisian names players actually use.
 enum MeldKind {
-  /// تيرسي - 3 or 4 cards of the same rank, suits distinct.
+  /// Ã˜ÂªÃ™Å Ã˜Â±Ã˜Â³Ã™Å  - 3 or 4 cards of the same rank, suits distinct.
   tirsi,
 
-  /// سويفي - 3 or more consecutive cards of one suit.
+  /// Ã˜Â³Ã™Ë†Ã™Å Ã™ÂÃ™Å  - 3 or more consecutive cards of one suit.
   suivi,
 }
 
@@ -274,7 +274,8 @@ class _IdGen {
 }
 
 /// Card values for Rami. Distinct from Chkobba's [FaceValues]: in Rami the
-/// ace is 11 and every face card is a flat 10, and the joker is 20.int ramiValue(Card c, RamiRules r) {
+/// ace is 11 and every face card is a flat 10, and the joker is 20.
+int ramiValue(Card c, RamiRules r) {
   if (c.joker) return r.jokerValue;
   return switch (c.rank) {
     Rank.ace => r.aceValue,
@@ -411,7 +412,7 @@ class RamiState {
     required this.seed,
     required this.stock,
     required this.hands,
-    required this.discard,
+    required this.discardPile,
     required this.totals,
     this.dealer = 0,
   });
@@ -421,7 +422,7 @@ class RamiState {
 
   List<Card> stock;
   List<List<Card>> hands;
-  List<Card> discard;
+  List<Card> discardPile;
   List<RamiMeld> melds = [];
   List<int> totals;
   int dealer;
@@ -453,7 +454,7 @@ class RamiState {
   /// suite asserts this after every single action.
   int get cardsInPlay =>
       stock.length +
-      discard.length +
+      discardPile.length +
       hands.fold<int>(0, (a, h) => a + h.length) +
       melds.fold<int>(0, (a, m) => a + m.cards.length);
 
@@ -473,7 +474,7 @@ class RamiState {
       seed: seed,
       stock: deck.cards,
       hands: List.generate(rules.seats, (_) => <Card>[]),
-      discard: [],
+      discardPile: [],
       totals: List<int>.filled(rules.seats, 0),
     );
     for (var i = 0; i < rules.handSize; i++) {
@@ -481,7 +482,7 @@ class RamiState {
         if (s.stock.isNotEmpty) s.hands[seat].add(s.stock.removeLast());
       }
     }
-    if (s.stock.isNotEmpty) s.discard.add(s.stock.removeLast());
+    if (s.stock.isNotEmpty) s.discardPile.add(s.stock.removeLast());
     s.opened = List<bool>.filled(rules.seats, false);
     s.everMeld = List<bool>.filled(rules.seats, false);
     s.current = (rules.seats > 1) ? 1 : 0; // left of the dealer opens
@@ -514,7 +515,7 @@ class RamiState {
         rules.seats,
         (i) => i < hands.length ? build(hands[i]) : <Card>[],
       ),
-      discard: build(discarded),
+      discardPile: build(discarded),
       totals: totals.isEmpty
           ? List<int>.filled(rules.seats, 0)
           : List<int>.from(totals),
@@ -539,8 +540,8 @@ class RamiState {
     }
     Card card;
     if (fromDiscard) {
-      if (discard.isEmpty) throw StateError('the discard pile is empty');
-      card = discard.removeLast();
+      if (discardPile.isEmpty) throw StateError('the discard pile is empty');
+      card = discardPile.removeLast();
       pickedThisTurn = card;
     } else {
       if (stock.isEmpty) throw StateError('the stock is empty');
@@ -664,7 +665,7 @@ class RamiState {
     }
     final c = hands[seat].firstWhere((x) => x.id == cardId);
     hands[seat].remove(c);
-    discard.add(c);
+    discardPile.add(c);
     discardedThisTurn = true;
     return _endTurn(seat, discarded: c);
   }
@@ -766,7 +767,7 @@ class RamiState {
         'pickedThisTurn': pickedThisTurn?.id,
         'stock': stock.map((c) => c.id).toList(),
         'hands': hands.map((h) => h.map((c) => c.id).toList()).toList(),
-        'discard': discard.map((c) => c.id).toList(),
+        'discard': discardPile.map((c) => c.id).toList(),
         'melds': melds
             .map((m) => {
                   'id': m.id,
@@ -815,7 +816,7 @@ class RamiState {
       seed: j['seed'] as int,
       stock: [],
       hands: List.generate(rules.seats, (_) => <Card>[]),
-      discard: [],
+      discardPile: [],
       totals: List<int>.from(j['totals'].cast<int>()),
       dealer: j['dealer'] as int? ?? 0,
     );
@@ -826,7 +827,7 @@ class RamiState {
       s.hands[seat] = raw.cast<int>().map(byId).toList();
     }
     reg(j['discard'].cast<dynamic>());
-    s.discard = (j['discard'] as List).cast<int>().map(byId).toList();
+    s.discardPile = (j['discard'] as List).cast<int>().map(byId).toList();
     s.stock = (j['stock'] as List).cast<int>().map(byId).toList();
 
     for (final raw in (j['melds'] as List).cast<Map<String, dynamic>>()) {
@@ -902,5 +903,5 @@ class RamiState {
   @override
   String toString() => 'RamiState(${rules.name} seed=$seed seat$current '
       'hands=${hands.map((h) => h.length).toList()} '
-      'stock=${stock.length} discard=${discard.length} melds=${melds.length})';
+      'stock=${stock.length} discard=${discardPile.length} melds=${melds.length})';
 }

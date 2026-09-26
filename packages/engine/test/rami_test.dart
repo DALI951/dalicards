@@ -294,7 +294,7 @@ void main() {
       expect(s.handOf(0).length, 2);
       s.discard(0, s.handOf(0).first.id);
       expect(s.current, 1);
-      expect(s.discard.length, 1);
+      expect(s.discardPile.length, 1);
     });
 
     test('a card taken from the discard cannot be dropped straight back', () {
@@ -550,8 +550,8 @@ void main() {
       expect(back.current, s.current);
       expect(back.stock.map((c) => c.id).toList(),
           s.stock.map((c) => c.id).toList());
-      expect(back.discard.map((c) => c.id).toList(),
-          s.discard.map((c) => c.id).toList());
+      expect(back.discardPile.map((c) => c.id).toList(),
+          s.discardPile.map((c) => c.id).toList());
       for (var seat = 0; seat < 2; seat++) {
         expect(back.handOf(seat).map((c) => c.id).toList(),
             s.handOf(seat).map((c) => c.id).toList());
@@ -593,8 +593,8 @@ void main() {
           final seat = s.current;
           if (!s.drewThisTurn) {
             // Take from the stock most of the time, sometimes the discard.
-            final takeDiscard = s.discard.isNotEmpty && rng.nextInt(4) == 0;
-            if (s.stock.isEmpty && s.discard.isEmpty) break;
+            final takeDiscard = s.discardPile.isNotEmpty && rng.nextInt(4) == 0;
+            if (s.stock.isEmpty && s.discardPile.isEmpty) break;
             s.draw(seat, fromDiscard: takeDiscard && s.stock.isEmpty);
           }
           // Try to open, then to meld: biggest combination first.
