@@ -114,7 +114,13 @@ jobs:
       - run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release
+        # The app is served from the /dalicards/ SUBPATH, so the base href has to
+        # say so. Without it, index.html resolves manifest.json, the CanvasKit
+        # files and the service worker against the site ROOT, every one of them
+        # 404s, and the app boots to a blank white page. `flutter build` leaves
+        # the placeholder `<base href="/">` in place, so this flag is the only
+        # thing standing between a green build and a broken site.
+        run: flutter build web --release --base-href /dalicards/
 
       - name: Screenshot the built app
         continue-on-error: true
@@ -152,3 +158,42 @@ jobs:
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
           commit_message: "deploy web ${{ github.sha }}"
+
+      - name: Verify the DEPLOYED site actually renders
+        # Everything above proves the build is fine, and a build can be fine
+        # while the deployed site is a blank page: serving from a subpath is
+        # exactly that failure, and the pre-deploy screenshot step cannot see it
+        # because it serves from the root where `<base href="/">` happens to be
+        # correct. So check the real public URL, and treat a suspiciously small
+        # screenshot as a failure - a blank 1280x900 page is ~5 KB, a rendered
+        # one is 80-200 KB.
+        run: |
+          set -e
+          SITE=https://dali951.github.io/dalicards
+          # The subpath assets must resolve under /dalicards/, not at the root.
+          for f in manifest.json flutter_bootstrap.js main.dart.js; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$f")
+            echo "$SITE/$f -> $code"
+            [ "$code" = "200" ] || { echo "FATAL: $f is not served from the subpath (is --base-href set?)"; exit 1; }
+          done
+          mkdir -p shots-deployed
+          google-chrome --headless=new --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage --use-gl=angle --use-angle=swiftshader \
+            --hide-scrollbars --force-device-scale-factor=1 \
+            --window-size=1280,900 --virtual-time-budget=25000 \
+            --screenshot=shots-deployed/deployed.png "$SITE/" || true
+          bytes=$(stat -c%s shots-deployed/deployed.png)
+          echo "deployed screenshot: $bytes bytes"
+          if [ "$bytes" -lt 20000 ]; then
+            echo "FATAL: the deployed screenshot is $bytes bytes - that is a BLANK page."
+            echo "       The build passed but the site does not render. Check --base-href."
+            exit 1
+          fi
+          echo "deployed site renders"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployed-shots
+          path: shots-deployed
+          if-no-files-found: ignore

@@ -56,6 +56,17 @@ has since landed the Chkobba table, so Chkobba now reports `playable`.**
 Chkobba is a real game in the app now, not a placeholder. Deal it, play it,
 lose to the bot, and watch the table.
 
+> **The site was a blank page until this milestone, and the build never said so.**
+> `flutter build web` leaves the placeholder `<base href="/">` in `index.html`,
+> but the app is served from the `dali951.github.io/dalicards/` **subpath**, so
+> every runtime asset — `manifest.json`, CanvasKit, the service worker — resolved
+> against the site *root*, 404'd, and left a white screen. It had been broken
+> since M3 and survived three green CI runs, because CI served its screenshot
+> from the *root*, where `<base href="/">` is accidentally correct. The fix is
+> `flutter build web --release --base-href /dalicards/`, plus a deploy step that
+> now curls the subpath assets and treats a blank (<20 KB) screenshot as a hard
+> failure. A green build is not a working site.
+
 ### What shipped
 
 | File | Role |
