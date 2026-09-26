@@ -236,7 +236,8 @@ void main() {
     });
 
     test('the threshold is configurable: 61 refuses what 51 allowed', () {
-      final notes = ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']; // 54
+      // 7+8+9+10+10+10 = 54: over 51, under 61.
+      final notes = ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc'];
       final easy = RamiState.fromCards(
           stock: stock, hands: [notes, ['Kd', '9d', '8d']], current: 0);
       final hard = RamiState.fromCards(
@@ -247,6 +248,19 @@ void main() {
       );
       expect(easy.canMeld(0, idsIn(easy, 0, notes)), isNotNull);
       expect(hard.canMeld(0, idsIn(hard, 0, notes)), isNull, reason: '54 < 61');
+    });
+
+    test('a longer run of the same cards clears 61 as well', () {
+      // 7c..Kc is 7+8+9+10+10+10+10 = 64.
+      final notes = ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'];
+      final hard = RamiState.fromCards(
+        stock: stock,
+        hands: [notes, ['Kd', '9d', '8d']],
+        current: 0,
+        rules: RamiRules.tunisian61,
+      );
+      expect(hard.canMeld(0, idsIn(hard, 0, notes)), isNotNull,
+          reason: '64 >= 61');
     });
 
     test('Tallage 71 counts only franc melds', () {
@@ -351,11 +365,16 @@ void main() {
         stock: stock,
         hands: [
           ['5c', '6c', '7c'],
-          ['Ad'],
+          ['Ad', '9d'],
         ],
         current: 0,
       );
-      expect(s.canMeld(0, idsIn(s, 0, ['5c', '6c', '7c', '9d'])), isNull);
+      // The 9d belongs to seat 1, so the set cannot be laid.
+      final mixed = [
+        ...idsIn(s, 0, ['5c', '6c', '7c']),
+        s.handOf(1).firstWhere((c) => c.notation == '9d').id,
+      ];
+      expect(s.canMeld(0, mixed), isNull);
     });
   });
 
@@ -580,10 +599,13 @@ void main() {
           guard++;
           final seat = s.current;
           if (!s.drewThisTurn) {
-            // Take from the stock most of the time, sometimes the discard.
-            final takeDiscard = s.discardPile.isNotEmpty && rng.nextInt(4) == 0;
+            // With no stock and no discard there is nothing left to draw, so
+            // the round cannot continue - that is a legal end state, not a bug.
             if (s.stock.isEmpty && s.discardPile.isEmpty) break;
-            s.draw(seat, fromDiscard: takeDiscard && s.stock.isEmpty);
+            // Take from the stock unless it is empty, and sometimes take the
+            // discard even when the stock still has cards.
+            final takeDiscard = s.discardPile.isNotEmpty && rng.nextInt(4) == 0;
+            s.draw(seat, fromDiscard: takeDiscard);
           }
           // Try to open, then to meld: biggest combination first.
           final hand = s.handOf(seat).map((c) => c.id).toList();
