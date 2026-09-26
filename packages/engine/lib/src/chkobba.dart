@@ -717,7 +717,13 @@ class ChkobbaState {
   static ChkobbaState fromJson(Map<String, dynamic> j) {
     final rules = ChkobbaRules.fromJson((j['rules'] ?? {}) as Map<String, dynamic>);
     final catalogue = _catalogue(rules);
-    Card c(int id) => catalogue[id];
+    Card c(int id) {
+      final card = catalogue[id];
+      if (card == null) {
+        throw StateError('card id $id is outside the deck catalogue');
+      }
+      return card;
+    }
 
     List<Card> ids(dynamic list) =>
         (list as List<dynamic>).map((e) => c(e as int)).toList();

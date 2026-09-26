@@ -16,8 +16,12 @@ ChkobbaState pos({
   List<String> table = const [],
   List<String> hand0 = const [],
   List<String> hand1 = const [],
+  List<String> hand2 = const [],
+  List<String> hand3 = const [],
   List<String> captured0 = const [],
   List<String> captured1 = const [],
+  List<String> captured2 = const [],
+  List<String> captured3 = const [],
   List<int> chkobbas = const [],
   int current = 0,
   int dealer = 0,
@@ -28,8 +32,18 @@ ChkobbaState pos({
   return ChkobbaState.fromCards(
     rules: rules,
     table: cards(table),
-    hands: {0: cards(hand0), 1: cards(hand1)},
-    captured: {0: cards(captured0), 1: cards(captured1)},
+    hands: {
+      0: cards(hand0),
+      1: cards(hand1),
+      2: cards(hand2),
+      3: cards(hand3),
+    },
+    captured: {
+      0: cards(captured0),
+      1: cards(captured1),
+      2: cards(captured2),
+      3: cards(captured3),
+    },
     chkobbas: chkobbas,
     current: current,
     dealer: dealer,
@@ -353,7 +367,7 @@ void main() {
       expect(x.points, greaterThanOrEqualTo(1));
     });
 
-    test('in 2v2 the partners' points add up for the team', () {
+    test('in 2v2 both partners score for the same team', () {
       final s = pos(
         rules: ChkobbaRules.twoVTwo,
         captured0: ['Ah'],
