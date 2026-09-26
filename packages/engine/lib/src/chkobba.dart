@@ -11,7 +11,7 @@ library;
 
 import 'dart:math';
 
-import '../cards.dart';
+import 'cards.dart';
 
 // ---------------------------------------------------------------------------
 // Rules
