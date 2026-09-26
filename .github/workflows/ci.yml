@@ -167,25 +167,49 @@ jobs:
         # correct. So check the real public URL, and treat a suspiciously small
         # screenshot as a failure - a blank 1280x900 page is ~5 KB, a rendered
         # one is 80-200 KB.
+        #
+        # Pages needs a minute or two to propagate, so retry for a few minutes
+        # before believing a blank page. Without the retry this step fails on the
+        # OLD cached build every single time and passes on the next run, which
+        # teaches everyone to ignore it - the worst property a gate can have.
         run: |
           set -e
           SITE=https://dali951.github.io/dalicards
-          # The subpath assets must resolve under /dalicards/, not at the root.
-          for f in manifest.json flutter_bootstrap.js main.dart.js; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$f")
-            echo "$SITE/$f -> $code"
-            [ "$code" = "200" ] || { echo "FATAL: $f is not served from the subpath (is --base-href set?)"; exit 1; }
-          done
           mkdir -p shots-deployed
-          google-chrome --headless=new --no-sandbox --disable-gpu \
-            --disable-dev-shm-usage --use-gl=angle --use-angle=swiftshader \
-            --hide-scrollbars --force-device-scale-factor=1 \
-            --window-size=1280,900 --virtual-time-budget=25000 \
-            --screenshot=shots-deployed/deployed.png "$SITE/" || true
-          bytes=$(stat -c%s shots-deployed/deployed.png)
-          echo "deployed screenshot: $bytes bytes"
-          if [ "$bytes" -lt 20000 ]; then
-            echo "FATAL: the deployed screenshot is $bytes bytes - that is a BLANK page."
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 20
+            missing=""
+            for f in manifest.json flutter_bootstrap.js main.dart.js; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$f")
+              echo "attempt $attempt: $f -> $code"
+              [ "$code" = "200" ] || missing="$missing $f($code)"
+            done
+            # The base href has to be the subpath, otherwise every one of those
+            # 200s can still be a blank page.
+            href=$(curl -s "$SITE/" | grep -o '<base href="[^"]*"' | head -1)
+            echo "attempt $attempt: $href"
+            if [ -n "$missing" ]; then echo "not yet: $missing"; continue; fi
+            case "$href" in
+              *"/dalicards/"*) ;;
+              *) echo "not yet: base href is not the subpath yet"; continue ;;
+            esac
+            google-chrome --headless=new --no-sandbox --disable-gpu \
+              --disable-dev-shm-usage --use-gl=angle --use-angle=swiftshader \
+              --hide-scrollbars --force-device-scale-factor=1 \
+              --window-size=1280,900 --virtual-time-budget=25000 \
+              --screenshot=shots-deployed/deployed.png "$SITE/" || true
+            bytes=$(stat -c%s shots-deployed/deployed.png 2>/dev/null || echo 0)
+            echo "attempt $attempt: screenshot $bytes bytes"
+            if [ "$bytes" -lt 20000 ]; then
+              echo "still blank, waiting for propagation"
+              continue
+            fi
+            ok=1
+            break
+          done
+          if [ "$ok" != "1" ]; then
+            echo "FATAL: the deployed site is still blank after ~4 minutes."
             echo "       The build passed but the site does not render. Check --base-href."
             exit 1
           fi
