@@ -34,7 +34,7 @@ void main() {
     });
 
     test('builds exactly as many cards as it claims', () {
-      final deck = Deck.shuffled(DeckSpec.rami, seed: 1);
+      final deck = Deck.shuffled(DeckSpec.rami, 1);
       expect(deck.cards.length, 108);
       expect(deck.cards.where((c) => c.joker).length, 4);
       expect(deck.cards.map((c) => c.id).toSet().length, 108,

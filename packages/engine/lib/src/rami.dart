@@ -495,7 +495,7 @@ class RamiState {
   /// notation still get distinct ids (the two copies in a double deck).
   factory RamiState.fromCards({
     List<String> stock = const [],
-    List<String> hands = const [],
+    List<List<String>> hands = const [],
     List<String> discarded = const [],
     List<int> totals = const [],
     RamiRules rules = RamiRules.tunisian,
