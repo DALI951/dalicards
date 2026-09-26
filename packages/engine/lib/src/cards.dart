@@ -229,9 +229,7 @@ class FaceValues {
 /// The seed is stored on the deck so any match can be replayed exactly -
 /// that is what makes the online event log auditable.
 class Deck {
-  Deck(this.cards, this.seed)
-      : _rng = Random(seed),
-        assert(cards.length >= 0);
+  Deck(this.cards, this.seed) : _rng = Random(seed);
 
   /// Builds and shuffles a deck from [spec]. Same [seed] => same order, always.
   factory Deck.shuffled(DeckSpec spec, int seed) {

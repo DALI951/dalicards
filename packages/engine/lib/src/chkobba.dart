@@ -366,13 +366,11 @@ class ChkobbaState {
   void _dealOpening() {
     for (var i = 0; i < rules.dealSize; i++) {
       for (var seat = 0; seat < seats; seat++) {
-        final c = stock.removeLast();
-        if (c != null) hands[seat].add(c);
+        if (stock.isNotEmpty) hands[seat].add(stock.removeLast());
       }
     }
     for (var i = 0; i < rules.tableCards; i++) {
-      final c = stock.removeLast();
-      if (c != null) table.add(c);
+      if (stock.isNotEmpty) table.add(stock.removeLast());
     }
     if (rules.redealOnThreeSameRank && _tableHasTriple()) {
       redealNeeded = true;

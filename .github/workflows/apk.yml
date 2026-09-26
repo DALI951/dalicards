@@ -37,6 +37,14 @@ jobs:
           grep -q "DaliCardsApp" lib/main.dart || { echo "FATAL: lib/main.dart overwritten"; exit 1; }
           echo "sources intact"
 
+      - name: Drop the scaffold test flutter create drops in
+        run: |
+          set -e
+          if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then
+            rm test/widget_test.dart
+            echo "removed the generated MyApp smoke test"
+          fi
+
       - name: Internet permission (online play)
         run: |
           python3 - <<'PY'
