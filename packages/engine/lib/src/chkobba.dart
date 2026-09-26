@@ -324,6 +324,12 @@ class ChkobbaState {
   int lastCapturer;
   int turnIndex;
 
+  /// The card left face-up on an emptied table as the visible mark of a
+  /// Chkobba. It is already counted inside the capturer's pile, so it is kept
+  /// out of [table] to avoid counting the same physical card twice. The UI
+  /// draws it on the bare table.
+  Card? chkobbaMarker;
+
   /// Cards played since the last deal (a deal is [ChkobbaRules.dealSize] per
   /// seat).
   int playedThisDeal;
@@ -501,8 +507,11 @@ class ChkobbaState {
       isChkobba = false;
     }
     if (isChkobba) {
-      // The played card stays visible on the table as the marker of the sweep.
-      table.add(card);
+      // The played card is already in the captured pile (CaptureOption.cards
+      // includes it). It is left face-up on the table as the marker of the
+      // sweep, but as a *display* artifact only - putting it in `table` would
+      // count the same physical card twice.
+      chkobbaMarker = card;
       chkobbas[seat]++;
     }
 
@@ -708,6 +717,7 @@ class ChkobbaState {
         'hands': hands.map((h) => h.map((c) => c.id).toList()).toList(),
         'captured': captured.map((c) => c.map((x) => x.id).toList()).toList(),
         'chkobbas': chkobbas,
+        'chkobbaMarker': chkobbaMarker?.id,
         'teamPoints': teamPoints,
         'roundPoints': roundPoints,
         'rules': rules.toJson(),
@@ -730,7 +740,8 @@ class ChkobbaState {
     List<Card> ids(dynamic list) =>
         (list as List<dynamic>).map((e) => c(e as int)).toList();
 
-    return ChkobbaState._(
+    final marker = j['chkobbaMarker'] as int?;
+    final state = ChkobbaState._(
       rules: rules,
       seed: j['seed'] as int,
       dealer: j['dealer'] as int,
@@ -753,6 +764,8 @@ class ChkobbaState {
       roundFinished: j['roundFinished'] as bool,
       redealNeeded: j['redealNeeded'] as bool,
     );
+    if (marker != null) state.chkobbaMarker = c(marker);
+    return state;
   }
 
   /// id -> Card for one match. Ids are assigned in deck-build order (suit

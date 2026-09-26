@@ -204,13 +204,15 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('Chkobba (the sweep)', () {
-    test('emptying the table scores a Chkobba and leaves the marker card', () {
+    test('emptying the table scores a Chkobba and keeps the marker card', () {
       final s = pos(table: ['5h'], hand0: ['5d'], hand1: ['2c']);
       final move = s.play(0, one('5d').id);
       expect(move.chkobba, isTrue);
       expect(s.chkobbasOf(0), 1);
-      expect(s.table.length, 1, reason: 'played card stays as the marker');
-      expect(s.table.first.notation, '5d');
+      expect(s.table, isEmpty, reason: 'the table really is swept');
+      expect(s.chkobbaMarker?.notation, '5d');
+      // The marker must not be counted twice.
+      expect(s.cardsInPlay, 2, reason: 'played card + the 2 in hand');
     });
 
     test('the dealer cannot Chkobba with the final card of the round', () {
