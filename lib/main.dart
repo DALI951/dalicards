@@ -32,6 +32,23 @@ class _DaliCardsAppState extends State<DaliCardsApp> {
   }
 
   @override
+  void didUpdateWidget(DaliCardsApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // initState only runs once per State, so a new initialLocale on a rebuilt
+    // root would otherwise be ignored and the app would keep the old language.
+    // main() builds this widget exactly once with a constant, so in the real app
+    // this never fires; it exists for tests that re-pump the root in another
+    // language. Deferred to after the frame because notifying the Listenable
+    // builder mid-build would mark a descendant dirty during the build phase.
+    final next = widget.initialLocale;
+    if (next != null && next != oldWidget.initialLocale) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _app.locale = next;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _app.dispose();
     super.dispose();
