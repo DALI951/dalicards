@@ -88,6 +88,9 @@ class RamiMeld {
   List<Card> get cards => shape.layout;
   bool get isFranc => shape.franc;
 
+  /// How many cards the meld locks up (jokers included).
+  int get length => shape.length;
+
   @override
   String toString() => 'meld#$id by seat$owner ${shape}';
 }
