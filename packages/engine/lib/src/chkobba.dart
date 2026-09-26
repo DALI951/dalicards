@@ -569,6 +569,9 @@ class ChkobbaState {
   /// Points earned in the round that just finished, per team.
   List<RoundScore> scoreRound() {
     final r = rules;
+    // Points and reasons are tracked separately: "Chkobba x3" is one reason
+    // but three points.
+    final pts = List<int>.filled(r.teamCount, 0);
     final per = List.generate(r.teamCount, (_) => <String>[]);
 
     if (r.scoreKarta) {
@@ -578,7 +581,9 @@ class ChkobbaState {
       }
       final best = counts.reduce((a, b) => a > b ? a : b);
       if (counts.where((n) => n == best).length == 1) {
-        per[counts.indexOf(best)].add('Karta');
+        final t = counts.indexOf(best);
+        pts[t] += 1;
+        per[t].add('Karta');
       }
     }
 
@@ -590,7 +595,9 @@ class ChkobbaState {
       }
       final best = counts.reduce((a, b) => a > b ? a : b);
       if (counts.where((n) => n == best).length == 1 && best > 0) {
-        per[counts.indexOf(best)].add('Dinari');
+        final t = counts.indexOf(best);
+        pts[t] += 1;
+        per[t].add('Dinari');
       }
     }
 
@@ -621,7 +628,10 @@ class ChkobbaState {
           if (sixTied.length == 1) bestTeam = sixTied.first;
         }
       }
-      if (bestTeam >= 0) per[bestTeam].add('Barmila');
+      if (bestTeam >= 0) {
+        pts[bestTeam] += 1;
+        per[bestTeam].add('Barmila');
+      }
     }
 
     if (r.scoreSabaa) {
@@ -630,7 +640,10 @@ class ChkobbaState {
             .any((c) => c.rank == Rank.seven && c.suit == Suit.diamonds);
         if (hasIt) {
           final t = r.teamOf(seat);
-          if (!per[t].contains('Sabaa el-Haya')) per[t].add('Sabaa el-Haya');
+          if (!per[t].contains('Sabaa el-Haya')) {
+            pts[t] += 1;
+            per[t].add('Sabaa el-Haya');
+          }
           break;
         }
       }
@@ -640,6 +653,7 @@ class ChkobbaState {
       for (var seat = 0; seat < seats; seat++) {
         if (chkobbas[seat] > 0) {
           final t = r.teamOf(seat);
+          pts[t] += chkobbas[seat];
           per[t].add('Chkobba x${chkobbas[seat]}');
         }
       }
@@ -647,9 +661,10 @@ class ChkobbaState {
 
     final out = <RoundScore>[];
     for (var t = 0; t < r.teamCount; t++) {
-      final pts = per[t].length;
-      roundPoints[t] = pts;
-      if (pts > 0) out.add(RoundScore(team: t, points: pts, reasons: per[t]));
+      roundPoints[t] = pts[t];
+      if (pts[t] > 0) {
+        out.add(RoundScore(team: t, points: pts[t], reasons: per[t]));
+      }
     }
     return out;
   }

@@ -211,8 +211,8 @@ void main() {
       expect(s.chkobbasOf(0), 1);
       expect(s.table, isEmpty, reason: 'the table really is swept');
       expect(s.chkobbaMarker?.notation, '5d');
-      // The marker must not be counted twice.
-      expect(s.cardsInPlay, 2, reason: 'played card + the 2 in hand');
+      // The marker must not be counted twice: 2 captured + 1 still in hand.
+      expect(s.cardsInPlay, 3);
     });
 
     test('the dealer cannot Chkobba with the final card of the round', () {
@@ -525,9 +525,12 @@ void main() {
         }
         expect(s.cardsInPlay, 40, reason: 'seed $seed ended at ${s.debug()}');
         expect(s.table, isEmpty);
-        // Scoring must never throw and must never exceed 5 categories.
+        // Scoring must never throw: 4 single-point categories at most, plus one
+        // point per Chkobba.
         final scored = s.scoreRound();
-        expect(scored.fold<int>(0, (a, b) => a + b.points), lessThanOrEqualTo(5));
+        final chkobbas = s.chkobbas.fold<int>(0, (a, b) => a + b);
+        final total = scored.fold<int>(0, (a, b) => a + b.points);
+        expect(total, lessThanOrEqualTo(4 + chkobbas));
       }
     });
 
