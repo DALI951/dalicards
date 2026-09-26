@@ -8,7 +8,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('DaliCards'), findsOneWidget);
-    expect(find.text('Pick a game'), findsOneWidget);
+    // SectionLabel renders small-caps, so the widget text is already uppercase.
+    expect(find.text('PICK A GAME'), findsOneWidget);
 
     expect(find.text('Chkobba'), findsOneWidget);
     expect(find.text('Rami'), findsOneWidget);
