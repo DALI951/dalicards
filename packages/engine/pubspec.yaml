@@ -1,0 +1,11 @@
+name: engine
+description: "DaliCards rules engine - pure Dart, zero Flutter imports. Headless-testable."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^4.0.0
