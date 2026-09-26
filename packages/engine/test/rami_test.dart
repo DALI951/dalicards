@@ -602,9 +602,11 @@ void main() {
             // With no stock and no discard there is nothing left to draw, so
             // the round cannot continue - that is a legal end state, not a bug.
             if (s.stock.isEmpty && s.discardPile.isEmpty) break;
-            // Take from the stock unless it is empty, and sometimes take the
-            // discard even when the stock still has cards.
-            final takeDiscard = s.discardPile.isNotEmpty && rng.nextInt(4) == 0;
+            // Only the discard left? Then the stock is gone and we must take it.
+            final onlyDiscard = s.stock.isEmpty;
+            // Otherwise mostly play the stock, and take the discard now and then.
+            final takeDiscard = onlyDiscard ||
+                (s.discardPile.isNotEmpty && rng.nextInt(4) == 0);
             s.draw(seat, fromDiscard: takeDiscard);
           }
           // Try to open, then to meld: biggest combination first.
