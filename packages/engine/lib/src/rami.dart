@@ -92,7 +92,7 @@ class RamiMeld {
   int get length => shape.length;
 
   @override
-  String toString() => 'meld#$id by seat$owner ${shape}';
+  String toString() => 'meld#$id by seat$owner $shape';
 }
 
 /// What one action did. Returned so the online event log, the bot and the UI
@@ -507,7 +507,7 @@ class RamiState {
     int current = 0,
   }) {
     final nextId = _IdGen();
-    final build = (List<String> notes) =>
+    List<Card> build(List<String> notes) =>
         notes.map((n) => nextId.card(Card.parse(n))).toList();
 
     final s = RamiState._(
@@ -852,13 +852,14 @@ class RamiState {
     s.stock = (j['stock'] as List).cast<int>().map(byId).toList();
 
     for (final raw in (j['melds'] as List).cast<Map<String, dynamic>>()) {
-      final sources = <Card>[
-        for (final c in (raw['sources'] as List).cast<Map<String, dynamic>>())
-          all.putIfAbsent(
-            c['id'] as int,
-            () => Card.parse(c['n'] as String, id: c['id'] as int),
-          )!,
-      ];
+      final sources = <Card>[];
+      for (final c in (raw['sources'] as List).cast<Map<String, dynamic>>()) {
+        final id = c['id'] as int;
+        sources.add(all.putIfAbsent(
+          id,
+          () => Card.parse(c['n'] as String, id: id),
+        ));
+      }
       final shape = solveMeld(sources, rules);
       if (shape == null) {
         throw FormatException('meld ${raw['id']} does not re-solve', '$raw');
