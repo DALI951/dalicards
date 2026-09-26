@@ -115,7 +115,10 @@ void main() {
 
     testWidgets('the chevron points the way the language reads',
         (tester) async {
-      tester.view.physicalSize = const Size(412, 915);
+      // Tall on purpose: the English hero is longer than the Arabic one, so a
+      // phone-sized viewport can leave the tiles below the fold and a ListView
+      // will not have built them.
+      tester.view.physicalSize = const Size(412, 1800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -142,7 +145,8 @@ void main() {
         Directionality.of(tester.element(find.text('DaliCards'))),
         TextDirection.ltr,
       );
-      expect(find.text('Choisis un jeu'), findsOneWidget);
+      // SectionLabel upper-cases, so the label is shouted in French too.
+      expect(find.text('CHOISIS UN JEU'), findsOneWidget);
       expect(find.text('Créer une table'), findsOneWidget);
       expect(find.text('Ajouter un ami'), findsOneWidget);
       expect(find.text('EN COURS'), findsNWidgets(2));

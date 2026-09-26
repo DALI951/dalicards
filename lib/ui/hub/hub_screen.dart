@@ -396,22 +396,23 @@ class _OnlineCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
+          // Wrap rather than a fixed Row: the buttons keep their natural width
+          // and drop to a second row on a narrow phone instead of overflowing,
+          // which they did at 320px with the longer Arabic labels.
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
             children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _toast(context, s.onlineSoon),
-                  icon: const Icon(Icons.add_link_rounded, size: 18),
-                  label: Text(s.createTable),
-                ),
+              FilledButton.icon(
+                onPressed: () => _toast(context, s.onlineSoon),
+                icon: const Icon(Icons.add_link_rounded, size: 18),
+                label: Text(s.createTable),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _toast(context, s.friendsSoon),
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: Text(s.addFriend),
-                ),
+              OutlinedButton.icon(
+                onPressed: () => _toast(context, s.friendsSoon),
+                icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                label: Text(s.addFriend),
               ),
             ],
           ),
