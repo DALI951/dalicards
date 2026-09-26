@@ -21,7 +21,7 @@ Live app: <https://dali951.github.io/dalicards>
 | M1 | Chkobba engine | ✅ done | 62 tests + 300-game fuzz, CI `36250880360` |
 | M2 | Rami engine | ✅ done | 106 tests incl. 200-game fuzz, CI `36255639301` |
 | M3 | Flutter shell + hub | ✅ done | 16 widget tests, CI `36257878142` |
-| M4 | Chkobba UI + offline | ⬜ next | engine is ready; needs the playable table |
+| M4 | Chkobba UI + offline | ✅ done | 117 engine tests incl. 10k-match bot fuzz, 44 widget tests |
 | M5 | Rami UI + offline | ⬜ | engine is ready; needs meld UX |
 | M6 | API + auth + friends | ⬜ | design settled in PLAN.md §10a |
 | M7 | Online Chkobba | ⬜ | |
@@ -47,8 +47,63 @@ widget tests + `flutter analyze` + web build + 4 screenshots + Pages deploy.
 | `test/hub_test.dart` | 16 tests: navigation, i18n, RTL, responsive, locale switching |
 
 Honest status is deliberate: Chkobba and Rami engines are **done**, but their
-tables land in M4/M5, so the registry reports `tableInProgress`, and Belote is
-`planned`. Nothing on screen claims to be playable before it is.
+tables land in M4/M5, so the registry reported `tableInProgress` back then, and
+Belote is `planned`. Nothing on screen claims to be playable before it is. **M4
+has since landed the Chkobba table, so Chkobba now reports `playable`.**
+
+## M4 — Chkobba table, playable offline ✅
+
+Chkobba is a real game in the app now, not a placeholder. Deal it, play it,
+lose to the bot, and watch the table.
+
+### What shipped
+
+| File | Role |
+|---|---|
+| `packages/engine/lib/src/bots/chkobba_bot.dart` | Three levels (`easy` / `normal` / `hard`), seeded, reads only its own hand |
+| `packages/engine/test/chkobba_bot_test.dart` | 11 tests: legality on every level, self-play fuzz over **10,000 full matches** |
+| `lib/ui/cards/playing_card.dart` | Cards and suits drawn as vectors — no image assets, any DPI, one accent red |
+| `lib/ui/chkobba/chkobba_controller.dart` | Owns the engine state, drives the bot on a timer, raises the Chkobba flash, one single `_commit` path for both players |
+| `lib/ui/chkobba/chkobba_setup.dart` | Opponent, bot level, and four house-rule flags before the deal |
+| `lib/ui/chkobba/chkobba_table.dart` | The table: opponent, table pile, your hand, capture chooser, round panel, the shout |
+| `test/chkobba_controller_test.dart` | 16 tests: hotseat privacy, full match to a winner, redeal, shareable setup links |
+| `test/chkobba_table_test.dart` | 12 tests: dealing, tapping, a whole round, EN/AR/FR, RTL, 320px phone, desktop |
+
+### Rules it plays
+
+Dali's table defaults, all of them flags in the setup screen: **J=8, Q=9, K=10,
+deal 3, target 21, win by 2, a single capture beats a sum, no Chkobba on the
+final card.** Swapped faces, target 31 or 11, deal 4, and "you pick the best
+capture" are one tap away, because every one of them is a `ChkobbaRules` field
+the engine already had.
+
+### Two bugs the tests caught, worth remembering
+
+1. **The whole screen was 0px wide.** `Scaffold.body` hands out *loose*
+   constraints, and a `Stack` whose children are all `Positioned` sizes itself
+   to `constraints.smallest`. The table needed `fit: StackFit.expand`. Nothing
+   looked wrong in the widget tree; it only showed up as a `Row` overflow.
+2. **The player's own Chkobba was silent.** The shout was raised in the human's
+   `playCard` and in the bot's path separately, and one of them dropped the
+   `ChkobbaMove` on the floor — so a sweep the player earned played no sound
+   and no flash. Both paths now go through one `_commit`, because a rule
+   implemented in two places is a rule implemented in one place minus the tests.
+
+### Deliberately not in M4
+
+- **2v2 partner play.** The engine supports seats and teams, but only the 1v1
+  paths are tested, so only 1v1 ships. The variants are ready for M7 online.
+- **Audio.** There are no sound assets in the repo and none were invented, so
+  the Chkobba moment is haptic plus the red flash plus the shout. Sound is a
+  M10 question, not an M4 gap.
+
+### How to check it yourself
+
+1. Open <https://dali951.github.io/dalicards> and tap **Chkobba** — it is the
+   only tile marked PLAYABLE.
+2. Pick **Solo vs bot** and a level, then **Deal the cards**.
+3. Tap a card in your hand. A card with two legal captures asks which one.
+4. `?lang=ar` mirrors the whole table, and the shout is written in Arabic.
 
 ### How to check it yourself
 

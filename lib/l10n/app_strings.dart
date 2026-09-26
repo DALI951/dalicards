@@ -90,8 +90,8 @@ class AppStrings {
 
   // -- hub -----------------------------------------------------------------
 
-  String get heroTitle =>
-      _t('Tunisian card games', 'ألعاب الورق التونسية', 'Jeux de cartes tunisiens');
+  String get heroTitle => _t('Tunisian card games', 'ألعاب الورق التونسية',
+      'Jeux de cartes tunisiens');
   String get heroBody => _t(
         'Play a bot, pass the phone, or send a link and play a friend online.',
         'العب ضد بوت، ولا مرّر الهاتف لصديقك، ولا أرسل رابط والعب مع صديقك أونلاين.',
@@ -141,6 +141,115 @@ class AppStrings {
         'القواعد خلصت واختبرت. الطاولة الجاية هي اللي تنلعب.',
         'Les règles sont finies et testées. La table jouable arrive ensuite.',
       );
+
+  // -- chkobba: setup ------------------------------------------------------
+
+  String get playChkobba =>
+      _t('Play Chkobba', 'العب شكوببا', 'Jouer à Chkobba');
+  String get vsBot => _t('Solo vs bot', 'العب ضد بوت', 'Solo contre un bot');
+  String get hotseat => _t('Hotseat', 'مع نفس الجهاز', 'Sur le même appareil');
+  String get hotseatBody => _t(
+        'Two players, one phone. Pass it across the table - neither hand is '
+            'ever shown.',
+        'لاعبّين، هاتف واحد. مرّره فوق الطاولة، وما تتبناش يدك ولا يد صاحبتك.',
+        'Deux joueurs, un téléphone. Passez-le - aucune main n\'est montrée.',
+      );
+  String get vsBotBody => _t(
+        'You against a bot. Three levels, and it never sees a card you do not '
+            'see either.',
+        'أنت ضد بوت. ثلاث مستويات، وهو ما يشوفش كرte ما تشوفهاش إنت.',
+        'Toi contre un bot. Trois niveaux, et il ne voit aucune carte que tu '
+            'ne vois pas.',
+      );
+  String get botEasy => _t('Easy', 'ساهل', 'Facile');
+  String get botNormal => _t('Normal', 'عادي', 'Normal');
+  String get botHard => _t('Hard', 'صعيب', 'Difficile');
+  String get botEasyBody => _t(
+        'Plays 4 cards in 10 by hand.',
+        'يلعب 4 من 10 على البالعقل.',
+        'Joue 4 cartes sur 10 au hasard.',
+      );
+  String get botNormalBody => _t(
+        'Always takes the biggest capture.',
+        'ديما ياخذ أكبر التقاط.',
+        'Prend toujours la plus grande capture.',
+      );
+  String get botHardBody => _t(
+        'Looks one move ahead, so it will not leave you a one-card table.',
+        'ينبّص حركة قدّام، فما يخليكش تبلّغ طاولة بقرط واحد.',
+        'Regarde un coup plus loin, ne te laissera pas une table à une carte.',
+      );
+  String get houseRules =>
+      _t('House rules', 'قواعد الطابلة', 'Règles de la table');
+  String get houseRulesBody => _t(
+        'Every table in Tunisia plays slightly differently. These are flags, '
+            'not code.',
+        'كل طابلة في تونس تلعب كيما تحب شويّة. هذي خيارات، ماشي كود.',
+        'Chaque table joue un peu différemment. Ce sont des options, pas du '
+            'code.',
+      );
+  String get faceValues => _t('Face cards', 'الكور besar', 'Figures');
+  String get faceValuesDefault =>
+      _t('J=8  Q=9  K=10', 'J=8  Q=9  K=10', 'J=8  Q=9  K=10');
+  String get faceValuesSwapped =>
+      _t('J=9  Q=8  K=10', 'J=9  Q=8  K=10', 'J=9  Q=8  K=10');
+  String get targetScore =>
+      _t('Target score', 'النقطة المطلوبة', 'Score cible');
+  String get dealSize => _t('Cards a deal', 'كروت القسمة', 'Cartes par donne');
+  String get singleBeatsSum => _t(
+        'A single capture beats a sum',
+        'القرط يسبق الجمع',
+        'La capture simple bat la somme',
+      );
+  String get bestSumWins => _t(
+        'You pick the best capture',
+        'إنت تختار أحسن قرط',
+        'Tu choisis la meilleure capture',
+      );
+  String get capturePriorityLabel =>
+      _t('When both work', 'كيما في إماّك', 'Quand les deux marchent');
+  String get startGame => _t('Deal the cards', 'اقسم الكروت', 'Distribuer');
+  String get changeRules =>
+      _t('Change rules', 'بدّل القواعد', 'Changer les règles');
+
+  // -- chkobba: the table --------------------------------------------------
+
+  String get yourTurn => _t('Your turn', 'دورك', 'Ton tour');
+  String get botTurn => _t('Thinking', 'يفكّر', 'Il réfléchit');
+  String get passThePhone =>
+      _t('Pass the phone', 'مرّر الهاتف', 'Passez le téléphone');
+  String get tablePile => _t('Table', 'الطابلة', 'La table');
+  String get yourPile => _t('Your pile', 'كروتك المجموعة', 'Ta pile');
+  String get hand => _t('Hand', 'الكروت', 'Main');
+  String get stockLabel => _t('Stock', 'الباقي', 'Reste');
+  String get captured => _t('Captured', 'مقروض', 'Capturé');
+  String get chkobbas => _t('Chkobbas', 'شكوببات', 'Chkobbas');
+  String get matchTotal => _t('Match', 'المجموع', 'Match');
+  String get roundOver => _t('Round over', 'خلصت الجولة', 'Manche terminée');
+  String get nextRound => _t('Next round', 'جولة أخرى', 'Manche suivante');
+  String get newMatch => _t('New match', 'مباراة جديدة', 'Nouvelle partie');
+  String get matchOver => _t('Match over', 'خلصت المباراة', 'Partie terminée');
+  String get youWin => _t('You win!', 'إنت ربحت!', 'Tu gagnes !');
+  String get youLose => _t('You lose', 'خسرت', 'Tu perds');
+  String get playerOne => _t('Player 1', 'اللاعب 1', 'Joueur 1');
+  String get playerTwo => _t('Player 2', 'اللاعب 2', 'Joueur 2');
+  String get bot => _t('Bot', 'بوت', 'Bot');
+  String get chooseCapture =>
+      _t('Take which cards?', 'تاخذ أڨرط؟', 'Tu prends quoi ?');
+  String get takeNothing => _t('No capture', 'بلا قرط', 'Sans capture');
+  String get cancel => _t('Cancel', 'بلاش', 'Annuler');
+  String get emptyTable =>
+      _t('The table is empty', 'الطابلة فارغة', 'La table est vide');
+  String get dealAgain =>
+      _t('Dealing again', 'ناقسم من جديد', 'Nouvelle donne');
+  String get playedOnTable =>
+      _t('left on the table', 'تركها على الطاولة', 'laissée sur la table');
+  String get tookCards => _t('took', 'اخذ', 'a pris');
+
+  /// The shout. Tunisian transliteration on purpose - this is the one string in
+  /// the app that has to sound like the table, not like a menu.
+  String get chkobbaShout => 'CHKOBBAAA!';
+  String get chkobbaShoutAr => 'شكوببا!';
 }
 
 /// App-wide state that survives navigation: for now just the chosen language.

@@ -1,4 +1,6 @@
 import 'package:dalicards/l10n/app_strings.dart';
+import 'package:dalicards/ui/chkobba/chkobba_controller.dart';
+import 'package:dalicards/ui/chkobba/chkobba_setup.dart';
 import 'package:dalicards/ui/game/table_screen.dart';
 import 'package:flutter/widgets.dart';
 
@@ -60,9 +62,9 @@ class GameRegistry {
         'Balaye la table. Crie CHKOBBAAA !',
       ),
       players: L10nText('2 or 4', '2 أو 4', '2 ou 4'),
-      status: GameStatus.tableInProgress,
+      status: GameStatus.playable,
       milestone: 'M4',
-      builder: _table,
+      builder: _chkobba,
     ),
     GameEntry(
       id: 'rami',
@@ -110,4 +112,21 @@ class GameRegistry {
 
   static Widget _table(BuildContext context, GameEntry game) =>
       TableScreen(game: game);
+
+  /// Chkobba opens on its setup screen, not on a table: the choice of opponent
+  /// and house rules comes before the first deal.
+  static Widget _chkobba(BuildContext context, GameEntry game) =>
+      ChkobbaSetupScreen(
+          game: game, initialSetup: ChkobbaSetup.fromQuery(_queryOf(context)));
+
+  /// Reads the setup a shared link carries. Fragment routing means the query
+  /// lives after the `#`, which `Uri.base.queryParameters` does not see, so both
+  /// ends are checked.
+  static String? _queryOf(BuildContext context) {
+    final base = Uri.base.queryParameters['table'];
+    if (base != null && base.isNotEmpty) return base;
+    final fragment = Uri.base.fragment;
+    if (!fragment.contains('?')) return null;
+    return fragment.split('?').last;
+  }
 }

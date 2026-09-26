@@ -1,6 +1,7 @@
 import 'package:dalicards/games/registry.dart';
 import 'package:dalicards/l10n/app_strings.dart';
 import 'package:dalicards/main.dart';
+import 'package:dalicards/ui/chkobba/chkobba_setup.dart';
 import 'package:dalicards/ui/game/table_screen.dart';
 import 'package:dalicards/ui/hub/hub_screen.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,11 @@ void expectNoRowOverflow(WidgetTester tester) {
   for (final element in find.byType(Row, skipOffstage: false).evaluate()) {
     final ro = element.renderObject;
     if (ro is! RenderFlex || ro.direction != Axis.horizontal) continue;
+    // A Row that has never been laid out reports a size of zero while its
+    // children still report intrinsic widths, which looks exactly like a
+    // 1000px overflow on a 0px row. Such a Row cannot have overflowed yet, and
+    // `tester.takeException()` covers the frame that lays it out.
+    if (!ro.hasSize) continue;
     // RenderFlex keeps its children behind ContainerRenderObjectMixin, so walk
     // them with firstChild/childAfter rather than a list.
     var total = 0.0;
@@ -66,28 +72,35 @@ void main() {
       expect(find.text('Add a friend'), findsOneWidget);
     });
 
-    testWidgets('honest status: nothing is playable yet, two are building',
+    testWidgets(
+        'honest status: one game is playable, one building, one planned',
         (tester) async {
       await tester.pumpWidget(const DaliCardsApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('BUILDING'), findsNWidgets(2));
+      expect(find.text('BUILDING'), findsOneWidget);
       expect(find.text('PLANNED'), findsOneWidget);
-      expect(find.text('PLAYABLE'), findsNothing);
+      expect(find.text('PLAYABLE'), findsOneWidget);
     });
 
-    testWidgets('tapping Chkobba opens its table, and back returns',
+    testWidgets('tapping Chkobba opens its setup, and back returns',
         (tester) async {
+      // Tall: the setup screen is a ListView, so the back button at the bottom is
+      // only built once the viewport is tall enough to reach it.
+      tester.view.physicalSize = tallPhone;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(const DaliCardsApp());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Chkobba'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(TableScreen), findsOneWidget);
-      expect(find.text('Rules engine ready'), findsOneWidget);
-      expect(find.text('M4'), findsOneWidget);
-      // The table screen is its own route, so the hub is gone.
+      // Chkobba now has a real table, so it opens on the setup screen: the
+      // opponent and the house rules come before the first deal.
+      expect(find.byType(ChkobbaSetupScreen), findsOneWidget);
+      expect(find.text('Play Chkobba'), findsOneWidget);
       expect(find.byType(HubScreen), findsNothing);
 
       await tester.tap(find.text('Back to games'));
@@ -103,7 +116,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('M5'), findsOneWidget);
-      expect(find.text('Melds, jokers, and a 51-point opening'), findsOneWidget);
+      expect(
+          find.text('Melds, jokers, and a 51-point opening'), findsOneWidget);
     });
 
     testWidgets('a planned game refuses to open', (tester) async {
@@ -128,8 +142,7 @@ void main() {
   });
 
   group('languages', () {
-    testWidgets('Arabic renders and mirrors the whole screen',
-        (tester) async {
+    testWidgets('Arabic renders and mirrors the whole screen', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -147,7 +160,7 @@ void main() {
       expect(find.text('اختر لعبة'), findsOneWidget);
       expect(find.textContaining('العب ضد بوت'), findsOneWidget);
       expect(find.text('أنشئ طاولة'), findsOneWidget);
-      expect(find.text('قيد الإنشاء'), findsNWidgets(2));
+      expect(find.text('قيد الإنشاء'), findsOneWidget);
       expect(find.text('مخططة'), findsOneWidget);
     });
 
@@ -191,7 +204,7 @@ void main() {
       expect(find.text('CHOISIS UN JEU'), findsOneWidget);
       expect(find.text('Créer une table'), findsOneWidget);
       expect(find.text('Ajouter un ami'), findsOneWidget);
-      expect(find.text('EN COURS'), findsNWidgets(2));
+      expect(find.text('EN COURS'), findsOneWidget);
     });
 
     testWidgets('the language menu switches the running app', (tester) async {
@@ -260,8 +273,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('French and English also fit a small phone',
-        (tester) async {
+    testWidgets('French and English also fit a small phone', (tester) async {
       for (final locale in [AppLocales.english, AppLocales.french]) {
         tester.view.physicalSize = const Size(320, 2000);
         tester.view.devicePixelRatio = 1;

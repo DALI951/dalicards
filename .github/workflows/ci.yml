@@ -46,13 +46,23 @@ jobs:
             lib/l10n/app_strings.dart \
             lib/games/registry.dart \
             lib/ui/game/table_screen.dart \
-            lib/ui/hub/hub_screen.dart
+            lib/ui/hub/hub_screen.dart \
+            lib/ui/cards/playing_card.dart \
+            lib/ui/chkobba/chkobba_controller.dart \
+            lib/ui/chkobba/chkobba_setup.dart \
+            lib/ui/chkobba/chkobba_table.dart \
+            packages/engine/lib/src/bots/chkobba_bot.dart
           do
             [ -f "$f" ] || { echo "FATAL: $f is missing after flutter create"; exit 1; }
           done
           grep -q "DaliCardsApp" lib/main.dart || { echo "FATAL: lib/main.dart was overwritten by flutter create"; exit 1; }
           grep -q "HubScreen" lib/ui/hub/hub_screen.dart || { echo "FATAL: hub_screen.dart overwritten"; exit 1; }
           grep -q "class L10nText" lib/l10n/app_strings.dart || { echo "FATAL: app_strings.dart overwritten"; exit 1; }
+          # The playable Chkobba table is the whole point of M4: if the scaffold
+          # ate the table or the bot, the app would still build and still deploy
+          # a hub that opens a game which does not exist.
+          grep -q "class ChkobbaTableScreen" lib/ui/chkobba/chkobba_table.dart || { echo "FATAL: chkobba_table.dart overwritten"; exit 1; }
+          grep -q "class ChkobbaBot" packages/engine/lib/src/bots/chkobba_bot.dart || { echo "FATAL: chkobba_bot.dart overwritten"; exit 1; }
           echo "sources intact:"
           git ls-files lib
 

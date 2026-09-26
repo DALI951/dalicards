@@ -4,6 +4,7 @@
 /// future server-side simulation all consume this same code.
 library;
 
+export 'src/bots/chkobba_bot.dart';
 export 'src/cards.dart';
 export 'src/chkobba.dart';
 export 'src/rami.dart';

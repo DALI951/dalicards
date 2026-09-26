@@ -29,6 +29,20 @@ sequence number; the client asks for `events since <seq>` every 1.2s. That
 means reconnecting is free, nothing desyncs, and it works on ordinary shared
 hosting. The server is authoritative and never sends another player's hand.
 
+## What works today
+
+- **Chkobba is playable**, offline: solo against a bot on three levels, or
+  hotseat on one phone with the hand kept hidden between turns. Deal, capture,
+  Chkobba, score, race to the target.
+- **Rami's engine is done and tested**; its table is the next milestone (M5).
+- **Online play** is not up yet. The API design is settled in
+  [PLAN.md](PLAN.md) §10a and the engine already speaks the seeded, replayable
+  event log it will need.
+
+Everything below describes what the *engine* supports, which is deliberately
+wider than what is on screen today — the rules were built variant-first so the
+UI could be a set of flags instead of a rewrite.
+
 ## House rules
 
 Chkobba is not played the same at every table, so the rules are settings:
