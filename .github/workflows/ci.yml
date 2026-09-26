@@ -100,13 +100,14 @@ jobs:
           SRV=$!
           sleep 3
           mkdir -p shots
-          for size in "1440,900,desktop" "412,915,phone"; do
-            IFS=',' read -r w h name <<< "$size"
+          # Third field is the ?lang= override, so the RTL build is shot too.
+          for size in "1440,900,desktop," "412,915,phone," "412,915,phone-ar,ar" "1440,900,desktop-fr,fr"; do
+            IFS=',' read -r w h name lang <<< "$size"
             google-chrome --headless=new --no-sandbox --disable-gpu \
               --disable-dev-shm-usage --use-gl=angle --use-angle=swiftshader \
               --hide-scrollbars --force-device-scale-factor=2 \
               --window-size=$w,$h --virtual-time-budget=20000 \
-              --screenshot=shots/$name.png http://localhost:8099/ || true
+              --screenshot=shots/$name.png "http://localhost:8099/?lang=$lang" || true
           done
           kill $SRV || true
           ls -la shots/

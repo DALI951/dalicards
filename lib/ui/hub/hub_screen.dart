@@ -1,71 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../games/registry.dart';
+import '../../l10n/app_strings.dart';
 import '../../theme.dart';
 
-/// One entry in the hub. A game only needs this record to be listed; the
-/// actual screens are registered later (M4 Chkobba, M5 Rami).
-class GameEntry {
-  const GameEntry({
-    required this.id,
-    required this.name,
-    required this.tagline,
-    required this.players,
-    required this.status,
-    this.script = 'latin',
-  });
-
-  final String id;
-  final String name;
-  final String tagline;
-  final String players;
-  final GameStatus status;
-  final String script;
-}
-
-enum GameStatus { playable, inProgress, planned }
-
-class HubScreen extends StatefulWidget {
+/// The game picker. Reads the whole catalogue from [GameRegistry] so a new game
+/// is one entry there, and every string from [AppStrings] so the whole screen
+/// flips with the language.
+class HubScreen extends StatelessWidget {
   const HubScreen({super.key});
 
   @override
-  State<HubScreen> createState() => _HubScreenState();
-}
-
-class _HubScreenState extends State<HubScreen> {
-  // Temporary catalogue until the game registry lands in M3.
-  static const games = <GameEntry>[
-    GameEntry(
-      id: 'chkobba',
-      name: 'Chkobba',
-      tagline: 'Sweep the table. Shout CHKOBBAAA!',
-      players: '2 or 4',
-      status: GameStatus.inProgress,
-    ),
-    GameEntry(
-      id: 'rami',
-      name: 'Rami',
-      tagline: 'Melds, jokers, 51-point opening drop',
-      players: '2-4',
-      status: GameStatus.planned,
-    ),
-    GameEntry(
-      id: 'belote',
-      name: 'Belote',
-      tagline: 'The classic trick game',
-      players: '2 or 4',
-      status: GameStatus.planned,
-    ),
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final s = AppScope.stringsOf(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DaliCards'),
+        title: Text(s.appTitle),
         actions: [
+          const _LanguageButton(),
           IconButton(
-            tooltip: 'Settings',
-            onPressed: () => _toast('Settings land in M10'),
+            tooltip: s.settings,
+            onPressed: () => _toast(context, s.settingsSoon),
             icon: const Icon(Icons.tune_rounded, size: 20),
           ),
           const SizedBox(width: 4),
@@ -79,10 +34,10 @@ class _HubScreenState extends State<HubScreen> {
             children: [
               const _Hero(),
               const SizedBox(height: 26),
-              const SectionLabel('Pick a game'),
+              SectionLabel(s.pickAGame),
               const SizedBox(height: 12),
-              for (final g in games) ...[
-                _GameTile(game: g),
+              for (final game in GameRegistry.all) ...[
+                _GameTile(game: game),
                 const SizedBox(height: 10),
               ],
               const SizedBox(height: 22),
@@ -93,11 +48,47 @@ class _HubScreenState extends State<HubScreen> {
       ),
     );
   }
+}
 
-  void _toast(String msg) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
+void _toast(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Language picker in the app bar. One globe, the current language as a tick.
+class _LanguageButton extends StatelessWidget {
+  const _LanguageButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    final s = app.strings;
+    return PopupMenuButton<String>(
+      tooltip: s.language,
+      icon: const Icon(Icons.language_rounded, size: 20),
+      onSelected: (code) => app.locale = AppLocales.byCode(code),
+      itemBuilder: (context) => [
+        for (final locale in AppLocales.supported)
+          PopupMenuItem<String>(
+            value: locale.languageCode,
+            child: Row(
+              children: [
+                if (locale.languageCode == app.locale.languageCode)
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: AppColors.acc,
+                  )
+                else
+                  const SizedBox(width: 16),
+                const SizedBox(width: 10),
+                Text(AppLocales.nativeName(locale)),
+              ],
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -106,6 +97,7 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppScope.stringsOf(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -124,17 +116,19 @@ class _Hero extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tunisian card games',
+                  s.heroTitle,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                       ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Play solo against a bot, pass the phone, or send a link '
-                  'and play a friend online.',
-                  style: TextStyle(color: AppColors.muted, height: 1.4),
+                Text(
+                  s.heroBody,
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -148,6 +142,7 @@ class _Hero extends StatelessWidget {
 }
 
 /// Decorative card fan, drawn in code (no image assets anywhere in this app).
+/// Kept symmetric on purpose so it needs no mirroring in Arabic.
 class _MiniFan extends StatelessWidget {
   const _MiniFan();
 
@@ -201,87 +196,129 @@ class _GameTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locked = game.status != GameStatus.playable;
+    final s = AppScope.stringsOf(context);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final planned = !game.isOpen;
+
     return Opacity(
-      opacity: locked ? 0.55 : 1,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.card,
+      opacity: planned ? 0.55 : 1,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.line),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.card2,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                game.name.characters.first,
-                style: const TextStyle(
-                  color: AppColors.acc,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+          onTap: () {
+            if (planned) {
+              _toast(context, s.plannedYet);
+              return;
+            }
+            Navigator.of(context).pushNamed(GameRegistry.routeFor(game.id));
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(color: AppColors.line),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _Monogram(name: game.name.of(s.locale)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              game.name.of(s.locale),
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _StatusChip(
+                            status: game.status,
+                            label: _statusLabel(s, game.status),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
                       Text(
-                        game.name,
+                        game.tagline.of(s.locale),
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                          color: AppColors.muted,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _StatusChip(status: game.status),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    game.tagline,
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  game.players,
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
-                const SizedBox(height: 8),
-                Icon(
-                  locked
-                      ? Icons.lock_outline_rounded
-                      : Icons.chevron_right_rounded,
-                  size: 20,
-                  color: locked ? AppColors.muted : AppColors.acc,
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      game.players.of(s.locale),
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Icon(
+                      planned
+                          ? Icons.lock_outline_rounded
+                          : (rtl
+                              ? Icons.chevron_left_rounded
+                              : Icons.chevron_right_rounded),
+                      size: 20,
+                      color: planned ? AppColors.muted : AppColors.acc,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _statusLabel(AppStrings s, GameStatus status) =>
+      switch (status) {
+        GameStatus.playable => s.statusPlayable,
+        GameStatus.tableInProgress => s.statusBuilding,
+        GameStatus.planned => s.statusPlanned,
+      };
+}
+
+class _Monogram extends StatelessWidget {
+  const _Monogram({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppColors.card2,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        // Safe: every registered game has a non-empty name.
+        name.characters.first,
+        style: const TextStyle(
+          color: AppColors.acc,
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -289,16 +326,17 @@ class _GameTile extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
+  const _StatusChip({required this.status, required this.label});
 
   final GameStatus status;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final (String label, Color color) = switch (status) {
-      GameStatus.playable => ('PLAYABLE', AppColors.good),
-      GameStatus.inProgress => ('BUILDING', AppColors.gold),
-      GameStatus.planned => ('PLANNED', AppColors.muted),
+    final color = switch (status) {
+      GameStatus.playable => AppColors.good,
+      GameStatus.tableInProgress => AppColors.gold,
+      GameStatus.planned => AppColors.muted,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -325,6 +363,7 @@ class _OnlineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppScope.stringsOf(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -340,7 +379,7 @@ class _OnlineCard extends StatelessWidget {
               const Icon(Icons.bolt_rounded, color: AppColors.acc, size: 18),
               const SizedBox(width: 8),
               Text(
-                'Play a friend',
+                s.playAFriend,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -349,36 +388,30 @@ class _OnlineCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Create a table, share the link, play in real time. Your friend '
-            'does not even need an account.',
-            style: TextStyle(color: AppColors.muted, fontSize: 13, height: 1.4),
+          Text(
+            s.playAFriendBody,
+            style: const TextStyle(
+              color: AppColors.muted,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(const SnackBar(
-                      content:
-                          Text('Online tables arrive with milestone M7'),
-                    )),
+                  onPressed: () => _toast(context, s.onlineSoon),
                   icon: const Icon(Icons.add_link_rounded, size: 18),
-                  label: const Text('Create a table'),
+                  label: Text(s.createTable),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(const SnackBar(
-                      content: Text('Friend codes arrive with milestone M6'),
-                    )),
+                  onPressed: () => _toast(context, s.friendsSoon),
                   icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: const Text('Add a friend'),
+                  label: Text(s.addFriend),
                 ),
               ),
             ],
