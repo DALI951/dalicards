@@ -1,8 +1,7 @@
+import 'package:dalicards/games/registry.dart';
+import 'package:dalicards/l10n/app_strings.dart';
+import 'package:dalicards/theme.dart';
 import 'package:flutter/material.dart';
-
-import '../../games/registry.dart';
-import '../../l10n/app_strings.dart';
-import '../../theme.dart';
 
 /// The game picker. Reads the whole catalogue from [GameRegistry] so a new game
 /// is one entry there, and every string from [AppStrings] so the whole screen

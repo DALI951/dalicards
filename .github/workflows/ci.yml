@@ -37,9 +37,24 @@ jobs:
       - name: Guard - flutter create must not clobber our sources
         run: |
           set -e
+          # Every file the app is made of. If flutter create ever eats one of
+          # these, the analyzer will fail with a confusing "URI doesn't exist"
+          # instead of the real cause, so check them by name.
+          for f in \
+            lib/main.dart \
+            lib/theme.dart \
+            lib/l10n/app_strings.dart \
+            lib/games/registry.dart \
+            lib/ui/game/table_screen.dart \
+            lib/ui/hub/hub_screen.dart
+          do
+            [ -f "$f" ] || { echo "FATAL: $f is missing after flutter create"; exit 1; }
+          done
           grep -q "DaliCardsApp" lib/main.dart || { echo "FATAL: lib/main.dart was overwritten by flutter create"; exit 1; }
           grep -q "HubScreen" lib/ui/hub/hub_screen.dart || { echo "FATAL: hub_screen.dart overwritten"; exit 1; }
-          echo "sources intact"
+          grep -q "class L10nText" lib/l10n/app_strings.dart || { echo "FATAL: app_strings.dart overwritten"; exit 1; }
+          echo "sources intact:"
+          git ls-files lib
 
       - name: Drop the scaffold test flutter create drops in
         run: |

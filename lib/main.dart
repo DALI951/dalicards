@@ -1,9 +1,9 @@
+import 'package:dalicards/games/registry.dart';
+import 'package:dalicards/l10n/app_strings.dart';
+import 'package:dalicards/theme.dart';
+import 'package:dalicards/ui/hub/hub_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
-import 'games/registry.dart';
-import 'l10n/app_strings.dart';
-import 'ui/hub/hub_screen.dart';
 
 void main() {
   // `?lang=ar` wins over the default so a link can pick the language.

@@ -1,8 +1,7 @@
+import 'package:dalicards/games/registry.dart';
+import 'package:dalicards/l10n/app_strings.dart';
+import 'package:dalicards/theme.dart';
 import 'package:flutter/material.dart';
-
-import '../../games/registry.dart';
-import '../../l10n/app_strings.dart';
-import '../../theme.dart';
 
 /// Where a game goes once you tap it.
 ///

@@ -1,7 +1,6 @@
+import 'package:dalicards/l10n/app_strings.dart';
+import 'package:dalicards/ui/game/table_screen.dart';
 import 'package:flutter/widgets.dart';
-
-import 'l10n/app_strings.dart';
-import 'ui/game/table_screen.dart';
 
 /// How far along a game is. Honest about it: Chkobba and Rami have finished,
 /// tested engines, so they are not "planned" any more, but there is no table
