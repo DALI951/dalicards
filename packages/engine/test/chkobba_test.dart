@@ -28,6 +28,7 @@ ChkobbaState pos({
   int dealer = 0,
   int lastCapturer = -1,
   int playedThisDeal = 0,
+  int seed = 0,
   ChkobbaRules rules = ChkobbaRules.tunisianDefault,
 }) {
   return ChkobbaState.fromCards(
@@ -51,6 +52,7 @@ ChkobbaState pos({
     dealer: dealer,
     lastCapturer: lastCapturer,
     playedThisDeal: playedThisDeal,
+    seed: seed,
   );
 }
 
