@@ -47,6 +47,69 @@ class Card {
   /// Jokers (Rami only) have no real rank/suit; [rank]/[suit] are placeholders.
   final bool joker;
 
+  /// Compact notation used by the test suite and by the cross-language rule
+  /// fixtures the PHP server is checked against: `Ah`, `Td`, `7c`, `Ks`, `Jk`.
+  ///
+  /// Throws [FormatException] on anything else - a fixture with a typo must
+  /// fail loudly, not silently mean a different card.
+  factory Card.parse(String s, {int id = 0}) {
+    if (s.length != 2) {
+      throw FormatException('bad card notation "$s" (want e.g. "7d")', s);
+    }
+    final r = s[0].toUpperCase();
+    final u = s[1].toLowerCase();
+    if (r == 'J' && u == 'k') {
+      return Card(id: id, rank: Rank.ace, suit: Suit.clubs, joker: true);
+    }
+    final rank = switch (r) {
+      'A' => Rank.ace,
+      '2' => Rank.two,
+      '3' => Rank.three,
+      '4' => Rank.four,
+      '5' => Rank.five,
+      '6' => Rank.six,
+      '7' => Rank.seven,
+      '8' => Rank.eight,
+      '9' => Rank.nine,
+      'T' => Rank.ten,
+      'J' => Rank.jack,
+      'Q' => Rank.queen,
+      'K' => Rank.king,
+      _ => throw FormatException('bad rank "$r" in "$s"', s),
+    };
+    final suit = switch (u) {
+      'h' => Suit.hearts,
+      'd' => Suit.diamonds,
+      'c' => Suit.clubs,
+      's' => Suit.spades,
+      _ => throw FormatException('bad suit "$u" in "$s"', s),
+    };
+    return Card(id: id, rank: rank, suit: suit);
+  }
+
+  String get notation => joker
+      ? 'Jk'
+      : '${switch (rank) {
+          Rank.ace => 'A',
+          Rank.two => '2',
+          Rank.three => '3',
+          Rank.four => '4',
+          Rank.five => '5',
+          Rank.six => '6',
+          Rank.seven => '7',
+          Rank.eight => '8',
+          Rank.nine => '9',
+          Rank.ten => 'T',
+          Rank.jack => 'J',
+          Rank.queen => 'Q',
+          Rank.king => 'K',
+        }}${switch (suit) {
+          Suit.hearts => 'h',
+          Suit.diamonds => 'd',
+          Suit.clubs => 'c',
+          Suit.spades => 's',
+        }}';
+
   @override
   String toString() => joker ? 'Joker#$id' : '${rank.name} of ${suit.name} #$id';
 

@@ -5,3 +5,4 @@
 library;
 
 export 'src/cards.dart';
+export 'src/chkobba.dart';
