@@ -11,6 +11,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   gates:
     name: analyze + test
@@ -66,6 +69,8 @@ jobs:
     name: build web + deploy pages
     needs: gates
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to push the built site to gh-pages
     steps:
       - uses: actions/checkout@v4
 
