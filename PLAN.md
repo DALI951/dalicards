@@ -201,7 +201,7 @@ client being the only thing players talk to. Revisit if cheating ever becomes re
 | **M0** | Env setup | ✅ Dart/Flutter is **CI-only** (local box has none), repo created, `.gitignore` + CI skeleton green, MySQL probe returns rows |
 | **M1** | Chkobba engine | ✅ 62 tests + 300-game fuzz, CI `36250880360` green, Pages live |
 | **M2** | Rami engine | ✅ 106 tests incl. 200-game fuzz, CI `36255639301` green |
-| **M3** | Flutter shell + hub | Hub renders, game picker navigates, i18n + RTL + responsive, screenshot-verified |
+| **M3** | Flutter shell + hub | ✅ EN/AR/FR + RTL, real `/game/:id` navigation, 16 widget tests, CI `36257878142` green, 4 screenshots, Pages live |
 | **M4** | Chkobba UI + offline | Full game playable vs human (hotseat) and vs 3 bot levels, sound/haptics, Chkobba flash |
 | **M5** | Rami UI + offline | Full game playable, meld drag/select, opening-drop validation UX |
 | **M6** | API + auth + friends | Guest login, friend codes, add friend, online presence, live round trip verified over real HTTP |

@@ -12,6 +12,7 @@ built automatically by GitHub Actions.
 | API (online play) | `https://modali.powerpme.com/dalicards-api/` |
 | Android APK | GitHub Releases, `DaliCards-vX.Y.Z.apk` |
 | Plan | [PLAN.md](PLAN.md) |
+| Progress | [MILESTONES.md](MILESTONES.md) — what is done, how it was verified, what is still open |
 
 ## Architecture
 
@@ -40,8 +41,15 @@ Chkobba is not played the same at every table, so the rules are settings:
 - each scoring category toggleable: Karta, Dīnārī, Barmīla, Sabaa el-Haya, Chkobba
 - 2v2 partner mode
 
-Rami: 1 or 2 decks, opening drop 31 / 41 / 51 points, joker rescue, ace-low,
-K-A-2 sequences, targets 101 / 201 / 501.
+Rami is one 108-card double deck (2×52 + **4 jokers**), 14 cards each, two
+players. Values J/Q/K = 10, A = 11, joker = 20 — deliberately different from
+Chkobba's face values. Melds are *tirsi* (3–4 of a rank) or *suivi* (3+
+consecutive of one suit), with **at most one joker per meld**, and a meld
+containing a joker does not count as franc. **Ace is low, so K-A-2 is not a run.**
+The opening drop is a setting — 51 / 61 / franc-only 71 ("Tallage") / none — and
+a card taken from the discard cannot be dropped straight back. Scoring: going out
+is free, losers pay their deadwood, and **a player who never melded pays a flat
+100**; lowest cumulative total wins, match target 1000.
 
 ## Build
 
