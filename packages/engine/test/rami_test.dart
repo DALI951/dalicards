@@ -20,7 +20,11 @@ const stock = [
   'Tc', 'Jc', 'Qc', 'Kc', 'Ac', '2d', '3d', '4d', '5d', '6d', '7d', '8d',
 ];
 
-List<int> ids(List<String> notes) => notes.map(Card.parse).map((c) => c.id).toList();
+/// Ids for a fixture hand. Every card needs its own id, otherwise "the 8c" and
+/// "the 9c" are the same card as far as the engine is concerned.
+List<int> ids(List<String> notes) => [
+      for (var i = 0; i < notes.length; i++) Card.parse(notes[i], id: i + 1).id,
+    ];
 
 Card one(String n) => Card.parse(n);
 
@@ -66,7 +70,7 @@ void main() {
 
   group('tirsi (sets)', () {
     test('three of a kind in three suits is a tirsi', () {
-      final m = solveMeld([one('Kd'), one('Qd'), one('Jd')], RamiRules.tunisian);
+      final m = solveMeld([one('Kd'), one('Kh'), one('Ks')], RamiRules.tunisian);
       expect(m, isNotNull);
       expect(m!.kind, MeldKind.tirsi);
       expect(m.franc, isTrue);
@@ -74,26 +78,31 @@ void main() {
     });
 
     test('a quartet of the same rank is a tirsi', () {
-      final m =
-          solveMeld([one('7d'), one('7h'), one('7s'), one('7c')], RamiRules.tunisian);
+      final m = solveMeld(
+          [one('7d'), one('7h'), one('7s'), one('7c')], RamiRules.tunisian);
       expect(m!.kind, MeldKind.tirsi);
       expect(m.length, 4);
     });
 
-    test('two cards of the same rank and suit are not a tirsi', () {
-      expect(solveMeld([one('Ad'), one('Ad'), one('Kd')], RamiRules.tunisian),
-          isNull);
-    });
-
-    test('but the two copies of one card ARE allowed in a double deck', () {
-      // Two red queens (both copies) + a king is a legal Tunisian tirsi.
-      final m = solveMeld(
-          [one('Qd'), one('Qd'), one('Qd'), one('Kd')], RamiRules.tunisian);
-      expect(m, isNotNull, reason: 'double deck allows the duplicate');
+    test('the two copies of one card may fill a double-deck set', () {
+      // Both queens of diamonds plus the other two queens.
+      final set = [one('Qd'), one('Qd'), one('Qh'), one('Qs')];
+      expect(solveMeld(set, RamiRules.tunisian), isNotNull);
+      // The same shape is illegal where duplicates are not allowed.
+      expect(
+        solveMeld(set, const RamiRules(duplicateCardInSetAllowed: false)),
+        isNull,
+      );
     });
 
     test('a pair alone is not a meld', () {
       expect(solveMeld([one('Ad'), one('Kd')], RamiRules.tunisian), isNull);
+    });
+
+    test('two red queens of the same rank and suit make a pair, not a tirsi', () {
+      // Two identical cards plus a king is not a set, and it is not a run.
+      expect(solveMeld([one('Qd'), one('Qd'), one('Kd')], RamiRules.tunisian),
+          isNull);
     });
 
     test('two kings and a joker make a tirsi, and it is not franc', () {
@@ -173,9 +182,9 @@ void main() {
         one('Jh'),
         one('Qh'),
       ];
-      final m = solveMeld(eight, RamiRules.tunisian);
-      expect(m!.length, 8);
-      expect(solveMeld(eight, const RamiRules(maxMeldSize: 7)), isNull);
+      expect(solveMeld(eight, const RamiRules(maxMeldSize: 8))!.length, 8);
+      // The default cap is 7, so the same eight cards are refused.
+      expect(solveMeld(eight, RamiRules.tunisian), isNull);
     });
   });
 
@@ -346,6 +355,78 @@ void main() {
     });
   });
 
+    test('a suivi on the table can be extended', () {
+      final s = RamiState.fromCards(
+        stock: stock,
+        hands: [
+          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
+          ['Ad'],
+        ],
+        current: 0,
+      );
+      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
+      expect(s.melds.single.length, 6);
+      // Drop the king in and the run reaches seven.
+      s.draw(0);
+      s.addToMeld(0, s.melds.single.id, ids(['Kc']));
+      expect(s.melds.single.length, 7);
+      expect(s.melds.single.shape.franc, isTrue);
+    });
+
+    test('you may add to another player meld on an open table', () {
+      final s = RamiState.fromCards(
+        stock: stock,
+        hands: [
+          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
+          ['7c', '3h'],
+        ],
+        current: 0,
+      );
+      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      final meldId = s.melds.single.id;
+      s.draw(0);
+      s.discard(0, s.handOf(0).first.id);
+      expect(s.current, 1);
+      // Seat 1 drops the missing 7 into seat 0's run.
+      s.addToMeld(1, meldId, ids(['7c']));
+      expect(s.melds.single.length, 7);
+      expect(s.melds.single.owner, 0, reason: 'ownership never changes');
+    });
+
+    test('a closed table refuses to let others touch the meld', () {
+      final s = RamiState.fromCards(
+        stock: stock,
+        hands: [
+          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
+          ['7c', '3h'],
+        ],
+        current: 0,
+        rules: const RamiRules(openMelds: false),
+      );
+      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      final meldId = s.melds.single.id;
+      s.draw(0);
+      s.discard(0, s.handOf(0).first.id);
+      expect(() => s.addToMeld(1, meldId, ids(['7c'])),
+          throwsA(isA<StateError>()));
+    });
+
+    test('the locked variant refuses any extension', () {
+      final s = RamiState.fromCards(
+        stock: stock,
+        hands: [
+          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
+          ['Ad'],
+        ],
+        current: 0,
+        rules: RamiRules.simple,
+      );
+      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
+      expect(() => s.addToMeld(0, s.melds.single.id, ids(['Kc'])),
+          throwsA(isA<StateError>()));
+    });
+  });
+
   group('progressive melds', () {
     test('a suivi on the table can be extended', () {
       final s = RamiState.fromCards(
@@ -420,16 +501,24 @@ void main() {
   });
 
   group('going out and golf scoring', () {
-    test('emptying your hand ends the round at zero cost', () {
+    // Seat 0 is one card from out: it draws, then has to play that card.
+    RamiState nearTheExit({List<int> totals = const [], bool seat1EverMelded = false}) {
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['9c'],
+          <String>[],
           ['Ad', 'Kd'],
         ],
+        totals: totals,
         current: 0,
         rules: RamiRules.simple,
       );
+      if (seat1EverMelded) s.everMeld[1] = true;
+      return s;
+    }
+
+    test('emptying your hand ends the round at zero cost', () {
+      final s = nearTheExit();
       s.draw(0);
       final move = s.discard(0, s.handOf(0).first.id);
       expect(move.wentOut, isTrue);
@@ -440,16 +529,9 @@ void main() {
     });
 
     test('losers pay the value of the loose cards in their hand', () {
-      // 11 + 10 = 21
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['9c'],
-          ['Ad', 'Kd'],
-        ],
-        current: 0,
-        rules: RamiRules.simple,
-      );
+      // 11 + 10 = 21. Seat 1 melded earlier, so it pays cards and not the
+      // flat never-melded penalty.
+      final s = nearTheExit(seat1EverMelded: true);
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       final r = s.result!;
@@ -460,15 +542,7 @@ void main() {
     });
 
     test('a player who never melded pays the flat penalty instead', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['9c'],
-          ['Ad', 'Kd'],
-        ],
-        current: 0,
-        rules: RamiRules.simple,
-      );
+      final s = nearTheExit();
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       final bill = s.result!.bills[1];
@@ -478,34 +552,25 @@ void main() {
     });
 
     test('melded cards are not charged - only the loose ones are', () {
+      // Seat 0 lays its whole hand as one seven-card run and is immediately
+      // out, so it pays nothing at all.
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
+          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
           ['Ad', 'Kd'],
         ],
         current: 0,
       );
-      s.meld(0, ids(['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc']));
-      s.draw(0);
-      s.discard(0, s.handOf(0).first.id);
-      final r = s.result!;
-      expect(r.bills[1].looseValue, 21);
-      expect(r.bills[1].everMeld, isFalse);
+      final move = s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      expect(move.wentOut, isTrue, reason: 'laying your last cards ends it');
+      expect(s.result!.bills[0].charge, 0);
+      expect(s.result!.bills[1].looseValue, 21);
+      expect(s.result!.bills[1].everMeld, isFalse);
     });
 
     test('the match ends once somebody crosses the target, lowest wins', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['9c'],
-          ['Ad', 'Kd'],
-        ],
-        discarded: [],
-        totals: [0, 999],
-        current: 0,
-        rules: RamiRules.simple,
-      );
+      final s = nearTheExit(totals: [0, 999], seat1EverMelded: true);
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       final r = s.result!;
@@ -514,19 +579,12 @@ void main() {
     });
 
     test('no moves are possible after the round is over', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['9c'],
-          ['Ad'],
-        ],
-        current: 0,
-        rules: RamiRules.simple,
-      );
+      final s = nearTheExit();
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       expect(s.roundOver, isTrue);
-      expect(() => s.discard(1, s.handOf(1).first.id), throwsA(isA<StateError>()));
+      expect(() => s.discard(1, s.handOf(1).first.id),
+          throwsA(isA<StateError>()));
     });
   });
 

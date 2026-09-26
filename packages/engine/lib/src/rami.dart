@@ -1,4 +1,4 @@
-/// Tunisian Rami (Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â§Ã™â€¦Ã™Å ) rules engine.
+/// Tunisian Rami (ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â±ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã…Â ) rules engine.
 ///
 /// Pure Dart, no Flutter, deterministic for a given seed so the online event
 /// log can replay a match card for card.
@@ -34,10 +34,10 @@ import 'cards.dart';
 
 /// The two meld shapes, in the Tunisian names players actually use.
 enum MeldKind {
-  /// Ã˜ÂªÃ™Å Ã˜Â±Ã˜Â³Ã™Å  - 3 or 4 cards of the same rank, suits distinct.
+  /// ÃƒËœÃ‚ÂªÃƒâ„¢Ã…Â ÃƒËœÃ‚Â±ÃƒËœÃ‚Â³Ãƒâ„¢Ã…Â  - 3 or 4 cards of the same rank, suits distinct.
   tirsi,
 
-  /// Ã˜Â³Ã™Ë†Ã™Å Ã™ÂÃ™Å  - 3 or more consecutive cards of one suit.
+  /// ÃƒËœÃ‚Â³Ãƒâ„¢Ã‹â€ Ãƒâ„¢Ã…Â Ãƒâ„¢Ã‚ÂÃƒâ„¢Ã…Â  - 3 or more consecutive cards of one suit.
   suivi,
 }
 
@@ -69,20 +69,20 @@ class MeldShape {
 
 /// A meld that is on the table, owned by the player who laid it.
 ///
-/// [sourceIds] are the *physical* cards that were laid, jokers included, and
-/// are what a snapshot stores. [shape] is the solved layout, recomputed on
-/// load, so a restored match is byte-identical to the original.
+/// [sources] are the *physical* cards that were laid, jokers included, and are
+/// what a snapshot stores. [shape] is the solved layout, recomputed on load, so
+/// a restored match is identical to the original.
 class RamiMeld {
   RamiMeld({
     required this.id,
     required this.owner,
     required this.shape,
-    required this.sourceIds,
-  });
+    required List<Card> sources,
+  }) : sources = List<Card>.from(sources);
 
   final int id;
   final int owner;
-  final List<int> sourceIds;
+  final List<Card> sources;
   MeldShape shape;
 
   List<Card> get cards => shape.layout;
@@ -283,8 +283,8 @@ int ramiValue(Card c, RamiRules r) {
   return switch (c.rank) {
     Rank.ace => r.aceValue,
     Rank.jack || Rank.queen || Rank.king => r.faceValue,
-    // Rami always uses the full 13-rank pack, so index+2 is the pip value.
-    _ => c.rank.index + 2,
+    // Rank runs ace,two,..,king, so a pip is index+1: two=1 -> 2, ten=9 -> 10.
+    _ => c.rank.index + 1,
   };
 }
 
@@ -353,6 +353,10 @@ MeldShape? _solveSuivi(
   final lo = ranks.first;
   final hi = ranks.last;
   final span = hi - lo + 1;
+  // A run can never hold two cards of the same rank. If the naturals are
+  // denser than a single rank per step, this is a set attempt, not a run -
+  // without this guard the extension math below happily invents a fake run.
+  if (span < naturals.length) return null;
 
   // Every gap inside the natural range must be paid for by a wild.
   if (span - naturals.length > wilds) return null;
@@ -455,11 +459,7 @@ class RamiState {
 
   /// Every card is always in exactly one of these piles. The fuzz test in the
   /// suite asserts this after every single action.
-  int get cardsInPlay =>
-      stock.length +
-      discardPile.length +
-      hands.fold<int>(0, (a, h) => a + h.length) +
-      melds.fold<int>(0, (a, m) => a + m.cards.length);
+  int get cardsInPlay => allCards.length;
 
   List<Card> handOf(int seat) => hands[seat];
   int handCount(int seat) => hands[seat].length;
@@ -594,11 +594,13 @@ class RamiState {
       id: _nextMeldId++,
       owner: seat,
       shape: shape,
-      sourceIds: List<int>.from(cardIds),
+      sources: picked,
     );
     melds.add(m);
     opened[seat] = true;
     everMeld[seat] = true;
+    // Laying your last cards is going out: there is nothing left to discard.
+    if (hands[seat].isEmpty) return _endTurn(seat);
     return RamiMove(
       seat: seat,
       drewFromStock: drewThisTurn && pickedThisTurn == null,
@@ -639,7 +641,7 @@ class RamiState {
       hands[seat].remove(c);
     }
     m.shape = shape;
-    m.sourceIds.addAll(picked.map((c) => c.id));
+    m.sources.addAll(picked);
     opened[seat] = true;
     everMeld[seat] = true;
     return RamiMove(
@@ -768,6 +770,15 @@ class RamiState {
         'drewThisTurn': drewThisTurn,
         'discardedThisTurn': discardedThisTurn,
         'pickedThisTurn': pickedThisTurn?.id,
+        // Every card in the round as id -> notation. Storing the card itself
+        // instead of guessing it from the id keeps the snapshot lossless for a
+        // shuffled deck and a hand-built test fixture alike.
+        'deck': {
+          for (final c in stock) '${c.id}': c.notation,
+          for (final h in hands)
+            for (final c in h) '${c.id}': c.notation,
+          for (final c in discardPile) '${c.id}': c.notation,
+        },
         'stock': stock.map((c) => c.id).toList(),
         'hands': hands.map((h) => h.map((c) => c.id).toList()).toList(),
         'discard': discardPile.map((c) => c.id).toList(),
@@ -777,7 +788,9 @@ class RamiState {
                   'owner': m.owner,
                   'kind': m.shape.kind.name,
                   'franc': m.shape.franc,
-                  'sourceIds': m.sourceIds,
+                  'sources': [
+                    for (final c in m.sources) {'id': c.id, 'n': c.notation}
+                  ],
                   'layout': m.shape.layout
                       .map((c) => c.joker
                           ? 'J${c.rank.name}/${c.suit.name}'
@@ -802,16 +815,20 @@ class RamiState {
     };
     final rules = byName[j['rules'] as String] ?? RamiRules.tunisian;
 
-    // The joker layout of a meld is re-derived by re-solving it, so the
-    // snapshot only has to store the physical card ids.
-    final all = <int, Card>{};
-    Card byId(int id) => all[id]!;
-    void reg(List<dynamic> raw) {
-      for (final id in raw.cast<int>()) {
-        if (all.containsKey(id)) continue;
-        final card = _cardById(id, rules);
-        all[id] = card;
+    // Cards come straight out of the stored deck map, so this works for a real
+    // shuffled deck and for a fixture whose ids are not deck positions. The
+    // joker layout of each meld is re-derived by re-solving it.
+    final all = <int, Card>{
+      for (final entry in (j['deck'] as Map).entries)
+        int.parse(entry.key as String):
+            Card.parse(entry.value as String, id: int.parse(entry.key as String)),
+    };
+    Card byId(int id) {
+      final c = all[id];
+      if (c == null) {
+        throw FormatException('snapshot is missing card id $id');
       }
+      return c;
     }
 
     final s = RamiState._(
@@ -823,20 +840,22 @@ class RamiState {
       totals: List<int>.from(j['totals'].cast<int>()),
       dealer: j['dealer'] as int? ?? 0,
     );
-    reg(j['stock'].cast<dynamic>());
     for (var seat = 0; seat < rules.seats; seat++) {
-      final raw = (j['hands'][seat] as List).cast<dynamic>();
-      reg(raw);
-      s.hands[seat] = raw.cast<int>().map(byId).toList();
+      s.hands[seat] =
+          (j['hands'][seat] as List).cast<int>().map(byId).toList();
     }
-    reg(j['discard'].cast<dynamic>());
     s.discardPile = (j['discard'] as List).cast<int>().map(byId).toList();
     s.stock = (j['stock'] as List).cast<int>().map(byId).toList();
 
     for (final raw in (j['melds'] as List).cast<Map<String, dynamic>>()) {
-      final ids = (raw['sourceIds'] as List).cast<int>();
-      reg(ids);
-      final shape = solveMeld(ids.map(byId).toList(), rules);
+      final sources = <Card>[
+        for (final c in (raw['sources'] as List).cast<Map<String, dynamic>>())
+          all.putIfAbsent(
+            c['id'] as int,
+            () => Card.parse(c['n'] as String, id: c['id'] as int),
+          )!,
+      ];
+      final shape = solveMeld(sources, rules);
       if (shape == null) {
         throw FormatException('meld ${raw['id']} does not re-solve', '$raw');
       }
@@ -844,7 +863,7 @@ class RamiState {
         id: raw['id'] as int,
         owner: raw['owner'] as int,
         shape: shape,
-        sourceIds: List<int>.from(ids),
+        sources: sources,
       ));
     }
     s._nextMeldId = s.melds.isEmpty
@@ -863,26 +882,30 @@ class RamiState {
     return s;
   }
 
-  /// Rebuilds a single card from a real deck id, using the same catalogue
-  /// order as [Deck.shuffled] (decks, then suits, then ranks, then jokers).
-  static Card _cardById(int id, RamiRules rules) {
-    var n = id;
-    for (var d = 0; d < rules.decks; d++) {
-      for (final suit in Suit.values) {
-        for (final rank in rules.deckSpec.ranks) {
-          if (n-- == 0) return Card(id: id, rank: rank, suit: suit);
-        }
-      }
-    }
-    for (var i = 0; i < rules.jokers; i++) {
-      if (n-- == 0) {
-        return Card(id: id, rank: Rank.ace, suit: Suit.clubs, joker: true);
-      }
-    }
-    throw RangeError('card id $id is outside the ${rules.name} deck');
-  }
-
   // -- helpers -------------------------------------------------------------
+
+  /// Every physical card in the round: the three piles plus the cards already
+  /// locked inside melds. Melds keep the cards as they were laid, so this is a
+  /// complete and duplicate-free view of the 108.
+  List<Card> get allCards {
+    final out = <Card>[];
+    final seen = <int>{};
+    void add(Iterable<Card> cards) {
+      for (final c in cards) {
+        if (seen.add(c.id)) out.add(c);
+      }
+    }
+
+    add(stock);
+    for (final h in hands) {
+      add(h);
+    }
+    add(discardPile);
+    for (final m in melds) {
+      add(m.sources);
+    }
+    return out;
+  }
 
   List<Card>? _pick(int seat, List<int> ids) {
     final out = <Card>[];
