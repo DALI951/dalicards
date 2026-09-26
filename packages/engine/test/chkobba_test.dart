@@ -140,8 +140,13 @@ void main() {
     });
 
     test('an Ace is always worth 1, never 11', () {
-      final s = pos(table: ['Kh', 'Qs'], hand0: ['Ad']);
-      expect(s.capturesFor(one('Ad')).first.size, 3);
+      // The ace must not be able to reach a king (10) or a queen (9).
+      final s = pos(table: ['Kh'], hand0: ['Ad']);
+      expect(s.capturesFor(one('Ad')), isEmpty);
+
+      final s2 = pos(table: ['Ah'], hand0: ['Ad']);
+      expect(s2.capturesFor(one('Ad')).first.size, 2,
+          reason: 'ace matches ace');
     });
   });
 
@@ -190,8 +195,10 @@ void main() {
     test('the option index picks between equal sums', () {
       final s = pos(table: ['Ad', '2c', '3h', '4s', '5c'], hand0: ['6h']);
       final options = s.capturesFor(one('6h'));
+      expect(options.length, greaterThan(1));
       final move = s.play(0, one('6h').id, optionIndex: 0);
-      expect(move.captured.length, options.first.size + 1);
+      // CaptureOption.cards already contains the played card.
+      expect(move.captured.length, options.first.size);
     });
   });
 
@@ -262,7 +269,8 @@ void main() {
 
     test('a fresh deal of 3 goes to each seat after a full deal is played', () {
       final s = ChkobbaState.newMatch(seed: 11);
-      for (var i = 0; i < 3; i++) {
+      // 3 cards x 2 seats = 6 plays before the next deal.
+      for (var i = 0; i < 6; i++) {
         s.play(s.current, s.handOf(s.current).first.id);
       }
       expect(s.stockCount, 24);
@@ -329,13 +337,19 @@ void main() {
     });
 
     test('Dinari goes to the most diamonds and needs at least one', () {
-      final s = pos(captured0: ['Ad', '2c'], captured1: ['3d', '4c']);
+      final s = pos(captured0: ['Ad', '2d'], captured1: ['3c', '4c']);
       final scores = s.scoreRound();
       expect(scores.firstWhere((x) => x.reasons.contains('Dinari')).team, 0);
       expect(scores.firstWhere((x) => x.reasons.contains('Dinari')).points, 1);
 
       final none = pos(captured0: ['Ah', '2c'], captured1: ['3h', '4c']);
       expect(none.scoreRound().where((x) => x.reasons.contains('Dinari')),
+          isEmpty);
+    });
+
+    test('a Dinari tie scores nothing', () {
+      final s = pos(captured0: ['Ad'], captured1: ['3d']);
+      expect(s.scoreRound().where((x) => x.reasons.contains('Dinari')),
           isEmpty);
     });
 
@@ -375,17 +389,19 @@ void main() {
       final s = pos(
         rules: ChkobbaRules.twoVTwo,
         captured0: ['Ah'],
-        captured1: ['3d'],
+        captured1: ['3h'],
         captured2: ['4h'],
         captured3: ['5c'],
         chkobbas: [0, 0, 1, 0],
       );
       final scores = s.scoreRound();
-      // seat0 and seat2 are partners (team 0): Karta 2 cards vs 2 -> tie
-      // Chkobba: seat2 belongs to team 0.
-      final t0 = scores.where((x) => x.team == 0).fold<int>(0, (a, b) => a + b.points);
-      final t1 = scores.where((x) => x.team == 1).fold<int>(0, (a, b) => a + b.points);
-      expect(t0, greaterThan(0));
+      // seat0 and seat2 are partners (team 0): Karta 2 cards vs 2 -> tie, and
+      // nobody holds a diamond, so the only point is seat2's Chkobba.
+      final t0 =
+          scores.where((x) => x.team == 0).fold<int>(0, (a, b) => a + b.points);
+      final t1 =
+          scores.where((x) => x.team == 1).fold<int>(0, (a, b) => a + b.points);
+      expect(t0, 1);
       expect(t1, 0);
     });
 

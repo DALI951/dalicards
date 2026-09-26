@@ -526,8 +526,10 @@ class ChkobbaState {
     if (playedThisDeal >= rules.dealSize * seats) {
       playedThisDeal = 0;
       dealIndex++;
-      final exhausted = hands.every((h) => h.isEmpty);
-      if (exhausted) {
+      // The round is only over when the stock is empty too. Empty hands just
+      // mean this deal is spent and the next 3 cards are due.
+      final handsEmpty = hands.every((h) => h.isEmpty);
+      if (handsEmpty && stock.isEmpty) {
         _finishRound();
       } else {
         for (var i = 0; i < rules.dealSize; i++) {
