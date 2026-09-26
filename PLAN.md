@@ -108,15 +108,23 @@ Base: 40-card deck, deal 3 each + 4 on table, play one, capture on single-value 
 
 ## 6. Rami rules engine spec
 
-2 decks (104) + 2 jokers, 14 each, draw → meld → discard.
-- Meld: set of 3–4 same rank · run of 3+ same suit · K-A-2 forbidden (toggle) · 1 joker per meld, endpoints only
-- Opening drop ≥ **51** points **and** ≥1 clean meld (no jokers) — toggle 31/41/51
-- Joker **rescue** by anyone holding the natural card (toggle)
-- Ace = 1 always (toggle ace-low)
-- Can add to your own melds; others' melds only after they go out (toggle)
-- Scoring: deadwood of losers, J/Q/K=10, A=11, target 101/201/501, redeal if nobody can open
+**Shipped in M2** (`packages/engine/lib/src/rami.dart`, 106 tests green in CI run 36255639301).
 
-**Tests:** every meld shape valid/invalid · joker in each position · rescue chain · opening threshold enforcement (both conditions) · ace-low · K-A-2 rejection · discard reshuffle from stock · go-out detection + final scoring · 4-player scoreboard.
+2 decks (104) + **4** jokers = **108 cards**, 14 each, draw → meld → discard.
+- Meld: set of 3–4 same rank · run of 3+ same suit · **K-A-2 forbidden** (ace is low) · 1 joker per meld · a meld needs at least one natural card
+- A meld using a joker is **not franc**
+- Opening drop ≥ **51** points (flags ship: 51, 61, and franc-only **71** Tallage, plus a no-threshold simple variant)
+- Values: pips at face value, **J/Q/K = 10, A = 11, joker = 20** (note: *not* Chkobba's J=8/Q=9/K=10)
+- Can add to your own melds; others' melds too while the table is open (`openMelds`, `progressiveMelds` flags)
+- A card taken from the discard cannot be dropped straight back (`mustUsePickedDiscard`)
+- Golf scoring: going out is free · losers pay their deadwood · **a player who never melded pays a flat 100** · lowest cumulative total wins, match target 1000
+
+**Open questions** (still house rules, decided at the table, all flag-configurable):
+- 51 vs 61 vs 71 opening, and progressive vs locked melds
+- whether a run may exceed 7 cards (`maxMeldSize`, default 7)
+- match target 1000 (lowest-wins) vs a highest-wins match
+
+**Tests:** every meld shape valid/invalid · joker in each position · duplicate double-deck cards in a set · ace-low and K-A-2 rejection · gap-bridging · opening threshold at 51/61/71 · picked-discard rule · snapshot round trip incl. joker layouts · golf scoring and the 100 penalty · **fuzz: 200 full rounds asserting all 108 cards survive every action**.
 
 ## 7. Bots (playable offline, no server)
 
@@ -159,13 +167,40 @@ Tables: `players` (id, code, name, created, last_seen) · `friends` (a,b,status)
 - Deploy via the proven SFTP script pattern (`deploy_dalicards.py` style), then live-verify with a real create→join→play→poll round trip.
 - Housekeeping: prune rooms idle > 24h, prune events of finished rooms, cap `state_json` size.
 
+### 10a. Keeping the PHP server honest about the rules (parity)
+
+**The problem:** the rules live in Dart (`packages/engine`). PHP cannot run it, so a
+PHP re-implementation would be a second source of truth that silently drifts — the
+classic way an online game ends up rejecting moves the offline game allows.
+
+**The rule: the server never re-implements the rules.**
+
+- The Dart engine stays authoritative. Every room stores a **snapshot** (`state_json`)
+  plus an ordered **event log**. The server only: authenticates the seat, checks the
+  move is *well-formed*, appends the event, bumps `seq`, and returns the new snapshot.
+- Legality is **not** re-derived on the server. It is derived when the log is
+  *replayed* in Dart (offline audit, anti-cheat sweep, bug reports).
+- One canonical JSON shape for a round, owned by Dart: `RamiState.toJson()` /
+  `ChkobbaState.toJson()`. PHP treats it as opaque.
+- **Shared fixtures are the contract.** A folder of frozen snapshot + expected
+  next-state pairs is committed, generated *by Dart*. Both sides must pass:
+  - Dart test: replay each fixture, assert it reaches the expected state.
+  - PHP test: for each fixture, apply the same event to `state_json` and assert the
+    server accepts it and that the snapshot it persists round-trips byte-identical.
+  - A fixture that only one side passes is a CI failure, so drift is caught the
+    moment either engine changes — not weeks later in an online match.
+
+**Consequence to accept deliberately:** the server cannot reject an illegal move on
+its own. Mitigated by the event log being append-only and auditable, and by the
+client being the only thing players talk to. Revisit if cheating ever becomes real.
+
 ## 11. Build order (each phase ends with something verified)
 
 | # | Phase | Done when |
 |---|---|---|
-| **M0** | Env setup | Dart SDK local, repo created, `.gitignore` + CI skeleton green, MySQL connectivity probe returns rows |
-| **M1** | Chkobba engine | 100% of the rule checklist tested, 10k self-play games clean |
-| **M2** | Rami engine | 100% of the Rami checklist tested, 10k self-play clean |
+| **M0** | Env setup | ✅ Dart/Flutter is **CI-only** (local box has none), repo created, `.gitignore` + CI skeleton green, MySQL probe returns rows |
+| **M1** | Chkobba engine | ✅ 62 tests + 300-game fuzz, CI `36250880360` green, Pages live |
+| **M2** | Rami engine | ✅ 106 tests incl. 200-game fuzz, CI `36255639301` green |
 | **M3** | Flutter shell + hub | Hub renders, game picker navigates, i18n + RTL + responsive, screenshot-verified |
 | **M4** | Chkobba UI + offline | Full game playable vs human (hotseat) and vs 3 bot levels, sound/haptics, Chkobba flash |
 | **M5** | Rami UI + offline | Full game playable, meld drag/select, opening-drop validation UX |
