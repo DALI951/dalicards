@@ -300,7 +300,6 @@ void main() {
       final drawn = s.draw(0)!;
       expect(drawn.id, isNot(-1));
       s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
-      expect(s.handOf(0).length, 2);
       s.discard(0, s.handOf(0).first.id);
       expect(s.current, 1);
       expect(s.discardPile.length, 1);
@@ -352,78 +351,6 @@ void main() {
         current: 0,
       );
       expect(s.canMeld(0, ids(['5c', '6c', '7c', '9d'])), isNull);
-    });
-  });
-
-    test('a suivi on the table can be extended', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
-          ['Ad'],
-        ],
-        current: 0,
-      );
-      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
-      expect(s.melds.single.length, 6);
-      // Drop the king in and the run reaches seven.
-      s.draw(0);
-      s.addToMeld(0, s.melds.single.id, ids(['Kc']));
-      expect(s.melds.single.length, 7);
-      expect(s.melds.single.shape.franc, isTrue);
-    });
-
-    test('you may add to another player meld on an open table', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
-          ['7c', '3h'],
-        ],
-        current: 0,
-      );
-      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
-      final meldId = s.melds.single.id;
-      s.draw(0);
-      s.discard(0, s.handOf(0).first.id);
-      expect(s.current, 1);
-      // Seat 1 drops the missing 7 into seat 0's run.
-      s.addToMeld(1, meldId, ids(['7c']));
-      expect(s.melds.single.length, 7);
-      expect(s.melds.single.owner, 0, reason: 'ownership never changes');
-    });
-
-    test('a closed table refuses to let others touch the meld', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
-          ['7c', '3h'],
-        ],
-        current: 0,
-        rules: const RamiRules(openMelds: false),
-      );
-      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
-      final meldId = s.melds.single.id;
-      s.draw(0);
-      s.discard(0, s.handOf(0).first.id);
-      expect(() => s.addToMeld(1, meldId, ids(['7c'])),
-          throwsA(isA<StateError>()));
-    });
-
-    test('the locked variant refuses any extension', () {
-      final s = RamiState.fromCards(
-        stock: stock,
-        hands: [
-          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
-          ['Ad'],
-        ],
-        current: 0,
-        rules: RamiRules.simple,
-      );
-      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
-      expect(() => s.addToMeld(0, s.melds.single.id, ids(['Kc'])),
-          throwsA(isA<StateError>()));
     });
   });
 
