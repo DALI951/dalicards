@@ -587,7 +587,8 @@ class RamiState {
     if (shape == null) {
       throw StateError('seat $seat cannot meld ${cardIds.join(",")}');
     }
-    for (final c in _pick(seat, cardIds)!) {
+    final picked = _pick(seat, cardIds)!;
+    for (final c in picked) {
       hands[seat].remove(c);
     }
     final m = RamiMeld(

@@ -432,16 +432,15 @@ void main() {
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc'],
+          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
           ['Ad'],
         ],
         current: 0,
       );
-      s.meld(0, ids(['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
       expect(s.melds.single.length, 6);
-      // Drop the 9 in and the run closes.
       s.draw(0);
-      s.addToMeld(0, s.melds.single.id, ids(['9c']));
+      s.addToMeld(0, s.melds.single.id, ids(['Kc']));
       expect(s.melds.single.length, 7);
       expect(s.melds.single.shape.franc, isTrue);
     });
@@ -450,18 +449,17 @@ void main() {
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
-          ['9c', '3h'],
+          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
+          ['7c', '3h'],
         ],
         current: 0,
       );
-      // seat0 lays the run, passes, then seat1 drops the missing 9 into it.
-      s.meld(0, ids(['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       final meldId = s.melds.single.id;
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
       expect(s.current, 1);
-      s.addToMeld(1, meldId, ids(['9c']));
+      s.addToMeld(1, meldId, ids(['7c']));
       expect(s.melds.single.length, 7);
       expect(s.melds.single.owner, 0, reason: 'ownership never changes');
     });
@@ -470,17 +468,17 @@ void main() {
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
-          ['9c', '3h'],
+          ['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', '2s'],
+          ['7c', '3h'],
         ],
         current: 0,
         rules: const RamiRules(openMelds: false),
       );
-      s.meld(0, ids(['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc']));
+      s.meld(0, ids(['8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc']));
       final meldId = s.melds.single.id;
       s.draw(0);
       s.discard(0, s.handOf(0).first.id);
-      expect(() => s.addToMeld(1, meldId, ids(['9c'])),
+      expect(() => s.addToMeld(1, meldId, ids(['7c'])),
           throwsA(isA<StateError>()));
     });
 
@@ -488,14 +486,14 @@ void main() {
       final s = RamiState.fromCards(
         stock: stock,
         hands: [
-          ['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc', '9c', '2s'],
+          ['7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc'],
           ['Ad'],
         ],
         current: 0,
         rules: RamiRules.simple,
       );
-      s.meld(0, ids(['7c', '8c', 'Tc', 'Jc', 'Qc', 'Kc']));
-      expect(() => s.addToMeld(0, s.melds.single.id, ids(['9c'])),
+      s.meld(0, ids(['7c', '8c', '9c', 'Tc', 'Jc', 'Qc']));
+      expect(() => s.addToMeld(0, s.melds.single.id, ids(['Kc'])),
           throwsA(isA<StateError>()));
     });
   });
