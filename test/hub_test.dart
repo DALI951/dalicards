@@ -4,7 +4,41 @@ import 'package:dalicards/main.dart';
 import 'package:dalicards/ui/game/table_screen.dart';
 import 'package:dalicards/ui/hub/hub_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Fails and NAMES any horizontal Row whose rigid children are wider than the
+/// Row itself.
+///
+/// `tester.takeException()` only says "a RenderFlex overflowed by N pixels",
+/// which does not say which one. Comparing each child's laid-out width against
+/// the Row's width pinpoints it, and skips nothing that matters: an Expanded or
+/// Flexible child has already been clipped to its share of the width, so it can
+/// never be the rigid thing that pushed the Row over.
+void expectNoRowOverflow(WidgetTester tester) {
+  final bad = <String>[];
+  for (final element in find.byType(Row, skipOffstage: false).evaluate()) {
+    final ro = element.renderObject;
+    if (ro is! RenderFlex || ro.direction != Axis.horizontal) continue;
+    final children = ro.children;
+    if (children == null || children.isEmpty) continue;
+    var total = 0.0;
+    for (final child in children) {
+      total += child.size.width;
+    }
+    if (total > ro.size.width + 0.5) {
+      bad.add('Row needs ${total.toStringAsFixed(1)}px but has '
+          '${ro.size.width.toStringAsFixed(1)}px -> $element');
+    }
+  }
+  expect(bad, isEmpty, reason: bad.join('\n'));
+}
+
+/// A viewport tall enough that ListView builds the whole hub, so finders can
+/// see the tiles and the online card. Off-screen children are never built, and
+/// the English and Arabic heroes wrap to different heights, so a phone-sized
+/// box makes tests depend on which language they ran in.
+const Size tallPhone = Size(412, 1800);
 
 void main() {
   group('hub', () {
@@ -118,7 +152,7 @@ void main() {
       // Tall on purpose: the English hero is longer than the Arabic one, so a
       // phone-sized viewport can leave the tiles below the fold and a ListView
       // will not have built them.
-      tester.view.physicalSize = const Size(412, 1800);
+      tester.view.physicalSize = tallPhone;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -136,6 +170,10 @@ void main() {
     });
 
     testWidgets('French translates the shell', (tester) async {
+      tester.view.physicalSize = tallPhone;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(
         const DaliCardsApp(initialLocale: AppLocales.french),
       );
@@ -193,35 +231,20 @@ void main() {
 
   group('responsive', () {
     testWidgets('phone width lays out without overflow', (tester) async {
-      tester.view.physicalSize = const Size(360, 740);
+      tester.view.physicalSize = const Size(360, 1800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(const DaliCardsApp());
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expectNoRowOverflow(tester);
       expect(find.byType(HubScreen), findsOneWidget);
-    });
-
-    testWidgets('desktop width keeps the content column centred',
-        (tester) async {
-      tester.view.physicalSize = const Size(1440, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(const DaliCardsApp());
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-
-      // The hero is inside a 720-wide box, so it cannot span a 1440 screen.
-      final hero = tester.getRect(find.text('Tunisian card games'));
-      expect(hero.left, greaterThan(0));
-      expect(hero.right, lessThan(1440));
     });
 
     testWidgets('a long Arabic word does not overflow on a small phone',
         (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
+      tester.view.physicalSize = const Size(320, 2000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -229,7 +252,39 @@ void main() {
         const DaliCardsApp(initialLocale: AppLocales.arabic),
       );
       await tester.pumpAndSettle();
+      expectNoRowOverflow(tester);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('French and English also fit a small phone',
+        (tester) async {
+      for (final locale in [AppLocales.english, AppLocales.french]) {
+        tester.view.physicalSize = const Size(320, 2000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(DaliCardsApp(initialLocale: locale));
+        await tester.pumpAndSettle();
+        expectNoRowOverflow(tester);
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('desktop width keeps the content column centred',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(const DaliCardsApp());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expectNoRowOverflow(tester);
+
+      // The hero is inside a 720-wide box, so it cannot span a 1440 screen.
+      final hero = tester.getRect(find.text('Tunisian card games'));
+      expect(hero.left, greaterThan(0));
+      expect(hero.right, lessThan(1440));
     });
   });
 }

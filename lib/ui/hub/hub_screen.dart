@@ -232,6 +232,8 @@ class _GameTile extends StatelessWidget {
                           Flexible(
                             child: Text(
                               game.name.of(s.locale),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
@@ -239,9 +241,11 @@ class _GameTile extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _StatusChip(
-                            status: game.status,
-                            label: _statusLabel(s, game.status),
+                          Flexible(
+                            child: _StatusChip(
+                              status: game.status,
+                              label: _statusLabel(s, game.status),
+                            ),
                           ),
                         ],
                       ),
@@ -346,6 +350,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: 9,
@@ -377,12 +383,16 @@ class _OnlineCard extends StatelessWidget {
             children: [
               const Icon(Icons.bolt_rounded, color: AppColors.acc, size: 18),
               const SizedBox(width: 8),
-              Text(
-                s.playAFriend,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  s.playAFriend,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
