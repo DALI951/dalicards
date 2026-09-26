@@ -97,11 +97,13 @@ void main() {
       expect(v.value(Rank.king), 10);
     });
 
-    test('the two variants never agree on a rank', () {
-      for (final r in [Rank.jack, Rank.queen, Rank.king]) {
-        expect(FaceValues.tunisian.value(r),
-            isNot(FaceValues.swapped.value(r)));
-      }
+    test('the two variants differ on J and Q but agree on K', () {
+      expect(FaceValues.tunisian.value(Rank.jack),
+          isNot(FaceValues.swapped.value(Rank.jack)));
+      expect(FaceValues.tunisian.value(Rank.queen),
+          isNot(FaceValues.swapped.value(Rank.queen)));
+      expect(FaceValues.tunisian.value(Rank.king),
+          FaceValues.swapped.value(Rank.king));
     });
   });
 
